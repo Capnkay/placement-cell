@@ -6,8 +6,8 @@
 <div class="page-head">
     <div>
         <h1>Application pipeline</h1>
-        <p class="lede">Move a candidate along and the student sees the new status with your note.
-            Each change is queued to the notification bean and written to the audit trail.</p>
+        <p class="lede">Move a candidate along and the student sees the new status with your note
+            straight away. Every change is written to the audit trail too.</p>
     </div>
 </div>
 
@@ -100,8 +100,8 @@
 
 <p class="small muted mt-1">
     To move several candidates at once, use the
-    <a href="${ctx}/admin/shortlist">batch shortlist</a>, which keeps your selection in a
-    stateful session bean while you work through the list.
+    <a href="${ctx}/admin/shortlist">batch shortlist</a> instead — it remembers every pick
+    as you work through the list, even across page loads.
 </p>
 
 <%@ include file="layout-bottom.jspf" %>

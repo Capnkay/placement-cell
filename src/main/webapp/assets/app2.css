@@ -25,7 +25,8 @@ td {
     vertical-align: middle;
 }
 tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: var(--surface-2); }
+tbody tr { transition: background-color .15s ease; }
+tbody tr:hover { background: var(--surface-3); }
 
 td .sub { display: block; color: var(--faint); font-size: 12px; margin-top: 1px; }
 .num { font-variant-numeric: tabular-nums; }
@@ -50,9 +51,10 @@ td .sub { display: block; color: var(--faint); font-size: 12px; margin-top: 1px;
     line-height: 20px;
     white-space: nowrap;
     cursor: pointer;
-    transition: background .1s ease, border-color .1s ease;
+    transition: background-color .1s ease, border-color .1s ease;
 }
 .btn:hover { background: var(--surface-2); border-color: var(--faint); text-decoration: none; }
+.btn:active, .icon-btn:active { transform: scale(0.97); }
 .btn:active { background: var(--surface-3); }
 
 .btn-primary {
@@ -61,6 +63,15 @@ td .sub { display: block; color: var(--faint); font-size: 12px; margin-top: 1px;
     color: #fff;
 }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+/* The press and lift above always apply so state is never lost, but they only
+   animate for anyone who hasn't asked their OS for less motion; otherwise the
+   state change is instant. */
+@media (prefers-reduced-motion: no-preference) {
+    .btn, .icon-btn { transition: background-color .1s ease, border-color .1s ease, transform .1s ease; }
+    .btn-primary { transition: background-color .1s ease, border-color .1s ease, color .1s ease, transform .1s ease; }
+    .btn-primary:hover { transform: translateY(-1px); }
+}
 
 .btn-danger { color: var(--bad); }
 .btn-danger:hover { background: var(--bad-quiet); border-color: var(--bad); }
@@ -82,6 +93,7 @@ td .sub { display: block; color: var(--faint); font-size: 12px; margin-top: 1px;
     background: var(--surface);
     color: var(--muted);
     cursor: pointer;
+    transition: background-color .1s ease, border-color .1s ease, color .1s ease;
 }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
 
@@ -122,7 +134,7 @@ input:focus, select:focus, textarea:focus {
     box-shadow: var(--ring);
 }
 input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--bad); }
-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgba(207, 34, 46, .2); }
+input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px oklch(54% 0.19 24 / .2); }
 input:disabled, select:disabled { background: var(--surface-2); color: var(--muted); }
 
 input[type=file] { font-size: 13px; }
@@ -233,6 +245,7 @@ legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 5px;
     font-size: 13px; font-weight: 500;
     color: var(--muted);
     border-bottom: 2px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
 }
 .tabs a:hover { color: var(--text); text-decoration: none; }
 .tabs a.active { color: var(--text); border-bottom-color: var(--accent); }
@@ -287,10 +300,10 @@ pre code { background: none; padding: 0; }
     display: grid;
     grid-template-columns: 1fr 420px;
 }
-@media (max-width: 900px) { .auth { grid-template-columns: 1fr; } .auth-aside { display: none; } }
+@media (max-width: 900px) { .auth { grid-template-columns: 1fr; } }
 
 .auth-aside {
-    background: var(--surface-2);
+    background: linear-gradient(180deg, var(--surface-2), var(--canvas));
     border-right: 1px solid var(--border);
     padding: 48px;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -300,9 +313,28 @@ pre code { background: none; padding: 0; }
 .auth-aside .lede { color: var(--muted); font-size: 14px; max-width: 52ch; }
 
 .auth-points { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 14px; }
-.auth-points li { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); }
-.auth-points .i { color: var(--accent); margin-top: 2px; }
+.auth-points li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; color: var(--muted); }
 .auth-points strong { color: var(--text); font-weight: 500; display: block; }
+
+/* A small tinted square behind an icon glyph — echoes .brand-mark rather than
+   a bare glyph in whitespace. Add alongside .i on any icon that wants the
+   same signature (a card head, a key figure); kept to a couple of spots
+   deliberately so it still reads as a system, not decoration. */
+.icon-chip {
+    width: 28px; height: 28px;
+    padding: 6px;
+    box-sizing: border-box;
+    border-radius: var(--radius-sm);
+    background: var(--accent-quiet);
+    color: var(--accent);
+}
+
+/* Placed after every unconditional .auth-aside rule above so it actually
+   wins the cascade at equal specificity (a media query positioned earlier in
+   the file loses to a later unconditional rule for the same property,
+   regardless of whether the query matches — the same trap the desktop nav
+   toggle had). */
+@media (max-width: 900px) { .auth-aside { display: none; } }
 
 .auth-main {
     display: grid; place-items: center;

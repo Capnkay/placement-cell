@@ -27,13 +27,13 @@
             <p class="lede">Your academic record decides which drives you can apply to, so
                 enter it carefully. You can correct any of it later from your profile.</p>
             <ul class="auth-points">
-                <li><svg class="i"><use href="#i-user"/></svg>
+                <li><svg class="i icon-chip"><use href="#i-user"/></svg>
                     <span><strong>Your college email</strong>
                         This is the address you will sign in with.</span></li>
-                <li><svg class="i"><use href="#i-file"/></svg>
+                <li><svg class="i icon-chip"><use href="#i-file"/></svg>
                     <span><strong>Your academic record</strong>
                         CGPA, backlogs and a resume, which recruiters read.</span></li>
-                <li><svg class="i"><use href="#i-briefcase"/></svg>
+                <li><svg class="i icon-chip"><use href="#i-briefcase"/></svg>
                     <span><strong>Then apply</strong>
                         Every drive your record qualifies you for.</span></li>
             </ul>

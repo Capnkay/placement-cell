@@ -83,7 +83,11 @@
 
     <div>
         <div class="card">
-            <div class="card-head"><h3>Pipeline</h3></div>
+            <div class="card-head">
+                <h3>Pipeline</h3>
+                <div class="spacer"></div>
+                <a class="small" href="${ctx}/admin/audit">Full audit trail</a>
+            </div>
             <div class="card-body">
                 <c:forEach var="e" items="${breakdown}">
                     <div class="bar-row">
@@ -95,40 +99,6 @@
                     </div>
                 </c:forEach>
             </div>
-        </div>
-
-        <div class="card">
-            <div class="card-head">
-                <h3>Latest activity</h3>
-                <div class="spacer"></div>
-                <a class="small" href="${ctx}/admin/audit">Full trail</a>
-            </div>
-            <c:choose>
-                <c:when test="${empty audit}">
-                    <div class="card-body"><p class="muted small mb-0">Nothing recorded yet.</p></div>
-                </c:when>
-                <c:otherwise>
-                    <div class="table-wrap">
-                        <table>
-                            <tbody>
-                            <c:forEach var="row" items="${audit}">
-                                <tr>
-                                    <td>
-                                        <span class="mono"><c:out value="${row.action}"/></span>
-                                        <span class="sub">
-                                            <c:out value="${row.at.toLocalDate()}"/>
-                                            <c:if test="${not empty row.durationMs}">
-                                                <span class="sep">&#183;</span>${row.durationMs} ms
-                                            </c:if>
-                                        </span>
-                                    </td>
-                                </tr>
-                            </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
-                </c:otherwise>
-            </c:choose>
         </div>
     </div>
 </div>

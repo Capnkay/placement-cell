@@ -7,8 +7,8 @@
     <div>
         <h1>Batch shortlisting</h1>
         <p class="lede">Tick candidates as you read through them, then commit the whole set in one go.
-            Your selection is held in a stateful session bean, so it survives every page
-            load until you commit it or close the session.</p>
+            Your picks stick around across page loads until you commit them or close the
+            session, so there is no rush working down a long list.</p>
     </div>
 </div>
 
@@ -62,7 +62,7 @@
                 <form class="inline-form" method="post" action="${ctx}/admin/shortlist">
                     <input type="hidden" name="csrf" value="${csrf}">
                     <input type="hidden" name="action" value="finish">
-                    <button class="btn btn-sm" type="submit" title="Calls the @Remove method on the bean">
+                    <button class="btn btn-sm" type="submit" title="Closes this shortlisting session">
                         End the session</button>
                 </form>
             </div>

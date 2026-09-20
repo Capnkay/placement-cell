@@ -31,17 +31,17 @@
 
             <ul class="auth-points">
                 <li>
-                    <svg class="i"><use href="#i-briefcase"/></svg>
+                    <svg class="i icon-chip"><use href="#i-briefcase"/></svg>
                     <span><strong>See where you stand</strong>
                         Drives you qualify for, and the exact reason when you do not.</span>
                 </li>
                 <li>
-                    <svg class="i"><use href="#i-arrow-right"/></svg>
+                    <svg class="i icon-chip"><use href="#i-arrow-right"/></svg>
                     <span><strong>Follow every application</strong>
                         From applied, through shortlist and interview, to the result.</span>
                 </li>
                 <li>
-                    <svg class="i"><use href="#i-file"/></svg>
+                    <svg class="i icon-chip"><use href="#i-file"/></svg>
                     <span><strong>Keep one record</strong>
                         CGPA, backlogs and your resume, in the place recruiters read.</span>
                 </li>

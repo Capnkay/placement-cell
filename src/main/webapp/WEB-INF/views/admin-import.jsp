@@ -6,9 +6,9 @@
 <div class="page-head">
     <div>
         <h1>Bulk student import</h1>
-        <p class="lede">Paste a batch of students as comma separated rows. The upload is read with
-            non blocking I/O, so a slow paste never holds a container thread waiting on
-            the next byte.</p>
+        <p class="lede">Paste a batch of students as comma separated rows, one student per line.
+            Every row is checked before anything is saved, so one bad line costs you that
+            line, not the whole batch.</p>
     </div>
 </div>
 

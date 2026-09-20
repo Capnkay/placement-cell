@@ -162,7 +162,10 @@
         </div>
 
         <div class="card">
-            <div class="card-head"><h3>Your record</h3></div>
+            <div class="card-head">
+                <svg class="i icon-chip"><use href="#i-user"/></svg>
+                <h3>Your record</h3>
+            </div>
             <div class="card-body">
                 <dl class="kv">
                     <dt>Roll number</dt><dd><c:out value="${profile.rollNo}"/></dd>

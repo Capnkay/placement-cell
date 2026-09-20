@@ -12,8 +12,15 @@
 <c:set var="me" value="${sessionScope.user}"/>
 <c:set var="theme" value="${empty cookie.portal_theme ? 'light' : cookie.portal_theme.value}"/>
 <%-- Only the path is carried into the theme link, never the query string, so an
-     ampersand in a filter cannot break the redirect back. --%>
-<c:set var="here" value="${pageContext.request.servletPath}"/>
+     ampersand in a filter cannot break the redirect back.
+
+     Every view is reached by a servlet forwarding to this JSP, so
+     request.servletPath on its own resolves to the JSP's own internal
+     WEB-INF path, not the public URL the visitor typed: the theme switch
+     would then redirect to a path nothing serves. The container exposes the
+     original, pre-forward path under this request attribute for exactly
+     this situation. --%>
+<c:set var="here" value="${not empty requestScope['jakarta.servlet.forward.servlet_path'] ? requestScope['jakarta.servlet.forward.servlet_path'] : pageContext.request.servletPath}"/>
 <!DOCTYPE html>
 <html lang="en" data-theme="${theme}">
 <head>
@@ -36,29 +43,72 @@
             <span class="brand-sub">${me.admin ? 'Officer' : 'Student'}</span>
         </a>
 
-        <nav class="nav">
-            <c:choose>
-                <c:when test="${me.admin}">
-                    <a href="${ctx}/admin/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
-                    <a href="${ctx}/admin/drives" class="${activePage == 'drives' ? 'active' : ''}">Drives</a>
-                    <a href="${ctx}/admin/companies" class="${activePage == 'companies' ? 'active' : ''}">Companies</a>
-                    <a href="${ctx}/admin/students" class="${activePage == 'students' ? 'active' : ''}">Students</a>
-                    <a href="${ctx}/admin/applications" class="${activePage == 'applications' ? 'active' : ''}">Pipeline</a>
-                    <a href="${ctx}/admin/shortlist" class="${activePage == 'shortlist' ? 'active' : ''}">Shortlist</a>
-                    <a href="${ctx}/admin/reports" class="${activePage == 'reports' ? 'active' : ''}">Reports</a>
-                    <a href="${ctx}/admin/database" class="${activePage == 'database' ? 'active' : ''}">Database</a>
-                    <a href="${ctx}/admin/import" class="${activePage == 'import' ? 'active' : ''}">Import</a>
-                    <a href="${ctx}/admin/audit" class="${activePage == 'audit' ? 'active' : ''}">Audit</a>
-                    <a href="${ctx}/admin/system" class="${activePage == 'system' ? 'active' : ''}">System</a>
-                </c:when>
-                <c:otherwise>
-                    <a href="${ctx}/app/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
-                    <a href="${ctx}/app/drives" class="${activePage == 'drives' ? 'active' : ''}">Drives</a>
-                    <a href="${ctx}/app/applications" class="${activePage == 'applications' ? 'active' : ''}">Applications</a>
-                    <a href="${ctx}/app/profile" class="${activePage == 'profile' ? 'active' : ''}">Profile</a>
-                </c:otherwise>
-            </c:choose>
-        </nav>
+        <%-- A hidden checkbox drives the mobile nav disclosure with the sibling
+             combinator below: no script, so the strict script-src 'self' CSP
+             stays intact. (An earlier <details>/<summary> version looked right
+             but Chromium keeps a <details> element's non-summary content
+             un-paintable while closed even when an ancestor is display:
+             contents, which silently made the whole desktop nav unclickable —
+             a checkbox has no such built-in hidden state to fight.) --%>
+        <div class="nav-drawer">
+            <input type="checkbox" id="navToggle" class="nav-check">
+            <label for="navToggle" class="nav-toggle icon-btn" aria-label="Menu">
+                <svg class="i i-sm"><use href="#i-menu"/></svg>
+            </label>
+            <nav class="nav">
+                <c:choose>
+                    <c:when test="${me.admin}">
+                        <c:set var="inRecruitment"
+                               value="${activePage == 'drives' || activePage == 'companies' || activePage == 'applications' || activePage == 'shortlist'}"/>
+                        <c:set var="inTools"
+                               value="${activePage == 'database' || activePage == 'import' || activePage == 'audit' || activePage == 'system'}"/>
+
+                        <a href="${ctx}/admin/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
+
+                        <%-- Click-to-open (checkbox hack) rather than hover-only, so this also
+                             works the same way on a phone: the drawer above just stacks this
+                             group in place, and tapping the trigger reveals its four links,
+                             with no second, different disclosure pattern to learn. --%>
+                        <div class="nav-group">
+                            <input type="checkbox" id="navGroupRecruitment" class="nav-group-check">
+                            <label for="navGroupRecruitment" class="nav-group-trigger ${inRecruitment ? 'active' : ''}">
+                                Recruitment
+                                <svg class="i i-sm i-chev"><use href="#i-chevron-down"/></svg>
+                            </label>
+                            <div class="nav-group-menu">
+                                <a href="${ctx}/admin/drives" class="${activePage == 'drives' ? 'active' : ''}">Drives</a>
+                                <a href="${ctx}/admin/companies" class="${activePage == 'companies' ? 'active' : ''}">Companies</a>
+                                <a href="${ctx}/admin/applications" class="${activePage == 'applications' ? 'active' : ''}">Pipeline</a>
+                                <a href="${ctx}/admin/shortlist" class="${activePage == 'shortlist' ? 'active' : ''}">Shortlist</a>
+                            </div>
+                        </div>
+
+                        <a href="${ctx}/admin/students" class="${activePage == 'students' ? 'active' : ''}">Students</a>
+                        <a href="${ctx}/admin/reports" class="${activePage == 'reports' ? 'active' : ''}">Reports</a>
+
+                        <div class="nav-group">
+                            <input type="checkbox" id="navGroupTools" class="nav-group-check">
+                            <label for="navGroupTools" class="nav-group-trigger ${inTools ? 'active' : ''}">
+                                Tools
+                                <svg class="i i-sm i-chev"><use href="#i-chevron-down"/></svg>
+                            </label>
+                            <div class="nav-group-menu">
+                                <a href="${ctx}/admin/database" class="${activePage == 'database' ? 'active' : ''}">Database</a>
+                                <a href="${ctx}/admin/import" class="${activePage == 'import' ? 'active' : ''}">Import</a>
+                                <a href="${ctx}/admin/audit" class="${activePage == 'audit' ? 'active' : ''}">Audit</a>
+                                <a href="${ctx}/admin/system" class="${activePage == 'system' ? 'active' : ''}">System</a>
+                            </div>
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <a href="${ctx}/app/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
+                        <a href="${ctx}/app/drives" class="${activePage == 'drives' ? 'active' : ''}">Drives</a>
+                        <a href="${ctx}/app/applications" class="${activePage == 'applications' ? 'active' : ''}">Applications</a>
+                        <a href="${ctx}/app/profile" class="${activePage == 'profile' ? 'active' : ''}">Profile</a>
+                    </c:otherwise>
+                </c:choose>
+            </nav>
+        </div>
 
         <div class="topbar-right">
             <a class="icon-btn" title="Switch to the ${theme == 'dark' ? 'light' : 'dark'} palette"

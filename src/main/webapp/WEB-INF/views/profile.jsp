@@ -127,7 +127,10 @@
 
     <div>
         <div class="card">
-            <div class="card-head"><h3>Resume</h3></div>
+            <div class="card-head">
+                <svg class="i icon-chip"><use href="#i-file"/></svg>
+                <h3>Resume</h3>
+            </div>
             <div class="card-body">
                 <c:choose>
                     <c:when test="${empty profile.resumeFile}">
