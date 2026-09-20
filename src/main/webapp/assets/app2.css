@@ -60,9 +60,9 @@ td .sub { display: block; color: var(--faint); font-size: 12px; margin-top: 1px;
 .btn-primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
 }
-.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
 
 /* The press and lift above always apply so state is never lost, but they only
    animate for anyone who hasn't asked their OS for less motion; otherwise the

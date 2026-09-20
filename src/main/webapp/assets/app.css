@@ -61,16 +61,26 @@
 
     --text: oklch(23% 0.014 40);
     --muted: oklch(46% 0.022 42);
-    --faint: oklch(62% 0.017 45);
+    /* Measured against every surface it actually sits on (canvas.mjs-style
+       manual audit: render each token to a 1x1 canvas, read the pixel back,
+       compute real WCAG contrast). The original 62% lightness measured only
+       3.26:1 on --surface-2, well under the 4.5:1 floor for normal text, and
+       this token is used everywhere: role labels, stat captions, table sub
+       rows. 50% clears every surface with margin (5.3-5.9:1) and stays a
+       visibly lighter tier than --muted. */
+    --faint: oklch(50% 0.022 42);
 
-    --accent: oklch(56% 0.17 40);
-    --accent-hover: oklch(49% 0.17 40);
+    --accent: oklch(52% 0.17 40);
+    --accent-hover: oklch(45% 0.17 40);
     --accent-quiet: oklch(95.5% 0.035 48);
     --accent-border: oklch(83% 0.075 46);
+    /* Text colour to put ON a solid --accent fill (buttons). White in light
+       mode; see the dark block for why this can't just be #fff everywhere. */
+    --on-accent: #fff;
 
-    --ok: oklch(55% 0.135 150);
+    --ok: oklch(48% 0.135 150);
     --ok-quiet: oklch(94% 0.045 150);
-    --warn: oklch(59% 0.15 78);
+    --warn: oklch(50% 0.15 75);
     --warn-quiet: oklch(94% 0.06 82);
     --bad: oklch(54% 0.19 24);
     --bad-quiet: oklch(94.5% 0.045 24);
@@ -79,7 +89,7 @@
 
     --radius: 10px;
     --radius-sm: 7px;
-    --ring: 0 0 0 3px oklch(56% 0.17 40 / .25);
+    --ring: 0 0 0 3px oklch(52% 0.17 40 / .25);
 }
 
 [data-theme="dark"] {
@@ -92,12 +102,22 @@
 
     --text: oklch(93% 0.011 55);
     --muted: oklch(71% 0.017 48);
-    --faint: oklch(54% 0.017 48);
+    /* Same audit as the light theme: 54% measured 3.0:1 on --surface-2,
+       under the floor. 66% clears every surface at 4.9-5.4:1. */
+    --faint: oklch(66% 0.02 48);
 
+    /* Kept bright (not darkened to fix the button-contrast problem below)
+       because this is also the link/text colour against a near-black
+       canvas, where it needs to stay light to read at all: 68% gives
+       5.5-6:1 there. The conflict is that a bright accent can't also take
+       white button text at 4.5:1 (measured 3.06:1) -- so the button text
+       colour is a separate token, --on-accent, instead of darkening the
+       one colour two incompatible jobs need. */
     --accent: oklch(68% 0.16 44);
     --accent-hover: oklch(74% 0.15 44);
     --accent-quiet: oklch(29% 0.05 42);
     --accent-border: oklch(43% 0.085 42);
+    --on-accent: oklch(22% 0.014 40);
 
     --ok: oklch(72% 0.16 150);
     --ok-quiet: oklch(27% 0.05 150);
@@ -196,7 +216,7 @@ hr { border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0; }
     width: 28px; height: 28px;
     border-radius: 7px;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     display: grid; place-items: center;
     flex: none;
 }
