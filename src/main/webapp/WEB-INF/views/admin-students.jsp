@@ -15,7 +15,7 @@
 
 <div class="card">
     <div class="card-head">
-        <form method="get" action="${ctx}/admin/students" style="display:flex; gap:9px; flex:1; max-width:460px">
+        <form method="get" action="${ctx}/admin/students" style="display:flex; gap:9px; flex:1; max-width:460px; flex-wrap:wrap">
             <input type="search" name="q" placeholder="Name, roll number or branch"
                    value="<c:out value='${query}'/>">
             <button class="btn" type="submit">Search</button>

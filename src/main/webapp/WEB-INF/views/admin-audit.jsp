@@ -18,7 +18,7 @@
 
 <div class="card">
     <div class="card-head">
-        <form method="get" action="${ctx}/admin/audit" style="display:flex; gap:9px; flex:1; max-width:520px">
+        <form method="get" action="${ctx}/admin/audit" style="display:flex; gap:9px; flex:1; max-width:520px; flex-wrap:wrap">
             <input type="search" name="q" placeholder="Method, actor or detail"
                    value="<c:out value='${query}'/>">
             <select name="limit" style="width:110px">

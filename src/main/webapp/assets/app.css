@@ -52,12 +52,19 @@
    hue-active colour, because "shortlisted / in progress" is a neutral state,
    not a positive or negative one. */
 :root {
-    --canvas: oklch(97.2% 0.007 55);
+    /* Canvas and border both sat within about two points of --surface's 99%
+       lightness, which is a difference the eye barely registers this close
+       to white: a card's edge all but disappeared into the page behind it,
+       and the whole product read as one flat, undifferentiated wash instead
+       of cards actually sitting on a page. Canvas pulled down and given a
+       little more of the warm tint, and border darkened to match, so a card
+       now visibly separates from what is behind it. */
+    --canvas: oklch(95% 0.010 55);
     --surface: oklch(99% 0.002 60);
     --surface-2: oklch(96% 0.009 55);
     --surface-3: oklch(93% 0.012 52);
-    --border: oklch(86.5% 0.014 50);
-    --border-muted: oklch(91% 0.009 52);
+    --border: oklch(81% 0.017 50);
+    --border-muted: oklch(88% 0.011 52);
 
     --text: oklch(23% 0.014 40);
     --muted: oklch(46% 0.022 42);
@@ -235,6 +242,12 @@ hr { border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0; }
     margin-left: 3px;
     border-left: 1px solid var(--border);
 }
+/* The role tag is the first thing that can go: brand mark + wordmark + this
+   + the hamburger + the avatar cluster add up to just over a 390px phone
+   viewport with nothing left to give, and this is the one piece that is not
+   load-bearing (the role is also printed under the name in .who once signed
+   in on a wider screen, and again on the dashboard itself). */
+@media (max-width: 480px) { .brand-sub { display: none; } }
 
 /* Five top-level entries (two of them grouped dropdowns) fit at any width the
    topbar itself supports, so unlike the eleven-link strip this replaced, .nav
@@ -284,6 +297,12 @@ hr { border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0; }
 }
 .nav-group-trigger:hover { background: var(--surface-2); color: var(--text); }
 .nav-group-trigger.active { color: var(--text); background: var(--surface-3); }
+/* The checkbox itself is the tab stop (visually hidden with clip, not
+   display: none, so it stays reachable and toggles on Space same as any
+   checkbox), but that same clip rect also clips away its own :focus-visible
+   outline. The label right after it in the markup is what a sighted keyboard
+   user is actually looking at, so the ring is drawn there instead. */
+.nav-group-check:focus-visible + .nav-group-trigger { outline: 2px solid var(--accent); outline-offset: 2px; }
 .nav-group-trigger .i-chev { transition: transform .15s ease; }
 .nav-group-check:checked ~ .nav-group-trigger .i-chev { transform: rotate(180deg); }
 
@@ -343,6 +362,10 @@ hr { border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0; }
    display: grid (app2.css loads after app.css, so an unqualified .nav-toggle
    of equal specificity would lose to it and stay visible at every width). */
 label.nav-toggle { display: none; cursor: pointer; }
+/* Same reasoning as .nav-group-check above: the checkbox is the real tab
+   stop, but its own clip rect hides any outline drawn on it, so the ring
+   goes on the label a sighted keyboard user can actually see. */
+.nav-check:focus-visible + label.nav-toggle { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (min-width: 861px) {
     .nav-drawer { display: contents; }
@@ -444,7 +467,20 @@ label.nav-toggle { display: none; cursor: pointer; }
 .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 320px; }
-@media (max-width: 960px) { .split { grid-template-columns: 1fr; } }
+/* minmax(0, 1fr), not a bare 1fr: a grid track's automatic minimum is its
+   content's min-content size, not zero, so a bare 1fr here would let a wide
+   table inside force the single mobile column past the viewport width —
+   the table's own .table-wrap already scrolls sideways for exactly this
+   reason, but only once the track itself stops trying to grow to fit it. */
+@media (max-width: 960px) { .split { grid-template-columns: minmax(0, 1fr); } }
+
+/* A narrower fixed rail for the database explorer's table list, which does
+   not need 320px. A class rather than an inline style on the element, so it
+   still collapses to one column under the same media query above — an
+   inline style attribute would outrank that query at every width and the
+   table list would never stack on a phone. */
+.split-narrow { grid-template-columns: 230px minmax(0, 1fr); }
+@media (max-width: 960px) { .split-narrow { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- Metric strip ----------
    One bordered row divided into cells, rather than four floating tiles with

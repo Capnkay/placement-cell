@@ -26,7 +26,7 @@
     </div>
 </c:if>
 
-<div class="split" style="grid-template-columns: 230px minmax(0, 1fr)">
+<div class="split split-narrow">
 
     <%-- Table list ------------------------------------------------------ --%>
     <div>

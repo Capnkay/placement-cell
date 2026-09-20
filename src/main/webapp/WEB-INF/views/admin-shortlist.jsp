@@ -14,7 +14,7 @@
 
 <div class="card">
     <div class="card-head">
-        <form method="get" action="${ctx}/admin/shortlist" style="display:flex; gap:9px; flex:1; max-width:520px">
+        <form method="get" action="${ctx}/admin/shortlist" style="display:flex; gap:9px; flex:1; max-width:520px; flex-wrap:wrap">
             <select name="drive" style="flex:1">
                 <option value="">Choose a drive to work on</option>
                 <c:forEach var="d" items="${drives}">
