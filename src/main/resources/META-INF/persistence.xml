@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
+                                 https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+    <!--
+      The persistence unit. Hibernate is named explicitly as the provider so the
+      object relational mapping is done by Hibernate rather than by whatever the
+      server happens to ship with, and the Hibernate jars travel in WEB-INF/lib.
+
+      The datasource is not a JDBC URL in this file. It is a JNDI name that the
+      server resolves to a pooled DataSource, which is the point of declaring
+      resources in the container: the application asks for a name, the container
+      supplies the connection pool.
+    -->
+    <persistence-unit name="placementPU" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <!--
+          The same JNDI name that WEB-INF/glassfish-resources.xml publishes, and
+          the same one PlacementReportDao looks up for its reporting SQL. One
+          pool, one set of credentials, two ways of using it.
+        -->
+        <jta-data-source>java:app/jdbc/placementDS</jta-data-source>
+
+        <class>com.campus.placement.entity.AppUser</class>
+        <class>com.campus.placement.entity.StudentProfile</class>
+        <class>com.campus.placement.entity.Company</class>
+        <class>com.campus.placement.entity.Drive</class>
+        <class>com.campus.placement.entity.JobApplication</class>
+        <class>com.campus.placement.entity.AuditLog</class>
+
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        <shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>
+
+        <properties>
+            <!-- Tells Hibernate which SQL flavour to generate. This one line is
+                 the whole difference between running on MySQL and running on
+                 anything else, which is the portability argument for an ORM. -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.dialect.storage_engine" value="innodb"/>
+
+            <!-- Creates the tables on first deploy and adds anything new later,
+                 without ever dropping a table that already holds data. -->
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+
+            <!-- GlassFish supplies the transaction manager, Hibernate joins it
+                 rather than managing transactions itself. -->
+            <property name="hibernate.transaction.jta.platform"
+                      value="org.hibernate.engine.transaction.jta.platform.internal.SunOneJtaPlatform"/>
+            <property name="hibernate.transaction.coordinator_class" value="jta"/>
+
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.jdbc.time_zone" value="UTC"/>
+
+            <!-- The connection is held for the length of the transaction and
+                 released at the end of it. Releasing after every statement looks
+                 thriftier, but it hands the pooled connection back while an
+                 outer transaction is still suspended, and the audit write that
+                 runs in its own transaction then fails inside the pool. -->
+            <property name="hibernate.connection.handling_mode"
+                      value="DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION"/>
+        </properties>
+    </persistence-unit>
+</persistence>

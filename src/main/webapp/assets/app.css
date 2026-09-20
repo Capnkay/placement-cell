@@ -1,0 +1,277 @@
+/* Campus Placement and Training Cell
+   ----------------------------------
+   Sizes and weights here follow what production interfaces actually use rather
+   than what looks impressive in isolation: a 14px body, headings that stop at
+   22px, one accent colour, and containers separated by hairline borders instead
+   of drop shadows. Borders hold a dense table together at a glance; a blurred
+   shadow under every card does not.
+
+   Two palettes, chosen by the data-theme attribute the layout sets from a
+   cookie. Every colour is a token, so the dark palette is a token swap and not
+   a second stylesheet. */
+
+:root {
+    --canvas: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --surface-3: #eef1f4;
+    --border: #d8dee4;
+    --border-muted: #e7ebef;
+
+    --text: #1c2024;
+    --muted: #5b6572;
+    --faint: #8b95a1;
+
+    --accent: #0b62d0;
+    --accent-hover: #0a55b5;
+    --accent-quiet: #eaf2fd;
+    --accent-border: #b6d3f5;
+
+    --ok: #1a7f37;
+    --ok-quiet: #e8f5ec;
+    --warn: #9a6700;
+    --warn-quiet: #fdf5e3;
+    --bad: #cf222e;
+    --bad-quiet: #fdeced;
+    --info: #6639ba;
+    --info-quiet: #f2edfb;
+
+    --radius: 8px;
+    --radius-sm: 6px;
+    --ring: 0 0 0 3px rgba(11, 98, 208, .22);
+}
+
+[data-theme="dark"] {
+    --canvas: #0d1117;
+    --surface: #151b23;
+    --surface-2: #1a212b;
+    --surface-3: #212933;
+    --border: #2c333d;
+    --border-muted: #232a33;
+
+    --text: #e6edf3;
+    --muted: #9198a1;
+    --faint: #6b7482;
+
+    --accent: #4493f8;
+    --accent-hover: #66a9fa;
+    --accent-quiet: #10243e;
+    --accent-border: #1f4b82;
+
+    --ok: #3fb950;
+    --ok-quiet: #0f2a17;
+    --warn: #d29922;
+    --warn-quiet: #2b2109;
+    --bad: #f85149;
+    --bad-quiet: #2d1315;
+    --info: #a371f7;
+    --info-quiet: #21193a;
+
+    --ring: 0 0 0 3px rgba(68, 147, 248, .3);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+                 Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3, h4 { margin: 0; font-weight: 600; line-height: 1.3; }
+h1 { font-size: 22px; letter-spacing: -.012em; }
+h2 { font-size: 16px; }
+h3 { font-size: 14px; }
+h4 { font-size: 13px; }
+p { margin: 0 0 12px; }
+p:last-child { margin-bottom: 0; }
+
+hr { border: 0; border-top: 1px solid var(--border-muted); margin: 20px 0; }
+
+::selection { background: var(--accent-quiet); }
+
+/* Focus is visible for keyboard users and quiet for mouse users. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Icons ---------- */
+
+.i {
+    width: 16px; height: 16px;
+    flex: none;
+    vertical-align: -3px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.i-sm { width: 14px; height: 14px; vertical-align: -2px; }
+.i-lg { width: 20px; height: 20px; vertical-align: -4px; }
+
+/* ---------- Shell ---------- */
+
+.topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.topbar-inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    flex: none;
+}
+.brand:hover { text-decoration: none; }
+
+.brand-mark {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--accent);
+    color: #fff;
+    display: grid; place-items: center;
+    flex: none;
+}
+.brand-mark svg { width: 18px; height: 18px; display: block; }
+
+/* On the sign in pages the mark sits alone above the heading, so it is given
+   room to be read as a logo rather than a favicon. */
+.auth-aside .brand { font-size: 15px; }
+.auth-aside .brand-mark { width: 32px; height: 32px; border-radius: 8px; }
+.auth-aside .brand-mark svg { width: 21px; height: 21px; }
+
+.brand-sub {
+    color: var(--faint);
+    font-weight: 400;
+    padding-left: 9px;
+    margin-left: 3px;
+    border-left: 1px solid var(--border);
+}
+
+.nav { display: flex; gap: 2px; margin-left: 6px; overflow-x: auto; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
+
+.nav a {
+    padding: 5px 9px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.nav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.nav a.active { color: var(--text); background: var(--surface-3); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
+
+.who { font-size: 13px; text-align: right; line-height: 1.25; white-space: nowrap; }
+.who strong { display: block; font-weight: 500; }
+.who span { color: var(--faint); font-size: 12px; }
+@media (max-width: 1100px) { .who { display: none; } }
+
+.avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    color: var(--muted);
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 600;
+    flex: none;
+}
+
+.page { max-width: 1240px; margin: 0 auto; padding: 24px 20px 64px; }
+
+.page-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    flex-wrap: wrap; margin-bottom: 20px;
+}
+.page-head .lede { color: var(--muted); margin: 4px 0 0; max-width: 74ch; font-size: 13px; }
+.spacer { margin-left: auto; }
+
+/* ---------- Cards ---------- */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.card + .card { margin-top: 16px; }
+.grid > .card + .card { margin-top: 0; }
+
+.card-head {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-muted);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--surface-2);
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+.card-head h2, .card-head h3 { margin: 0; }
+.card-body { padding: 16px; }
+.card-body.tight { padding: 11px 16px; }
+.card-foot {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-muted);
+    background: var(--surface-2);
+    font-size: 12px; color: var(--muted);
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.grid { display: grid; gap: 16px; }
+.grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 960px) { .split { grid-template-columns: 1fr; } }
+
+/* ---------- Metric strip ----------
+   One bordered row divided into cells, rather than four floating tiles with
+   oversized numbers. Reads as a summary bar, which is what it is. */
+
+.metrics {
+    display: flex;
+    flex-wrap: wrap;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.metric {
+    flex: 1 1 150px;
+    padding: 12px 16px;
+    border-right: 1px solid var(--border-muted);
+    min-width: 0;
+}
+.metric:last-child { border-right: 0; }
+.metric .k { font-size: 12px; color: var(--muted); display: block; }
+.metric .v {
+    font-size: 20px; font-weight: 600; letter-spacing: -.015em;
+    font-variant-numeric: tabular-nums; display: block; margin-top: 1px;
+}
+.metric .n { font-size: 12px; color: var(--faint); }

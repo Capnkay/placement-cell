@@ -1,0 +1,16 @@
+</main>
+
+<%-- jsp:useBean is the action element that instantiates a JavaBean and binds it
+     to a scope. Here it gives the page a Date without a line of Java in the
+     view, which is the point: the page stays declarative. --%>
+<jsp:useBean id="renderedAt" class="java.util.Date" scope="page"/>
+
+<footer class="footer">
+    Campus Placement and Training Cell
+    <span class="sep">&#183;</span> Jakarta EE on GlassFish
+    <span class="sep">&#183;</span> MySQL through JDBC and Hibernate
+    <span class="sep">&#183;</span> <fmt:formatDate value="${renderedAt}" pattern="d MMM yyyy, HH:mm:ss"/>
+</footer>
+
+</body>
+</html>

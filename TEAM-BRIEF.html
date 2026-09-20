@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Placement and Training Cell : team brief</title>
+<style>
+  :root {
+    --ink: #16181d; --muted: #5d636e; --line: #dfe2e8;
+    --paper: #fbfbfa; --panel: #ffffff; --accent: #1f4fa8; --ok: #1b6b45;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink:#e9eaee; --muted:#9aa1ad; --line:#2b2f37;
+            --paper:#121419; --panel:#171a20; --accent:#7ea6f0; --ok:#5fbd8e; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:40px 20px 72px; background:var(--paper); color:var(--ink);
+         font:16px/1.6 -apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size:1.6rem; margin:0 0 4px; letter-spacing:-0.01em; }
+  .sub { color:var(--muted); margin:0 0 32px; }
+  h2 { font-size:0.78rem; text-transform:uppercase; letter-spacing:0.09em;
+       color:var(--muted); margin:38px 0 12px; font-weight:600; }
+  code, .mono { font-family:ui-monospace,"Cascadia Mono",Consolas,monospace; font-size:0.9em; }
+  pre { background:var(--panel); border:1px solid var(--line); border-radius:6px;
+        padding:14px 16px; overflow-x:auto; margin:0 0 12px; }
+  table { width:100%; border-collapse:collapse; }
+  td, th { text-align:left; padding:9px 12px 9px 0; border-bottom:1px solid var(--line);
+           vertical-align:top; font-size:0.94rem; }
+  th { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); }
+  .card { border:1px solid var(--line); border-radius:6px; background:var(--panel);
+          padding:14px 16px; margin-bottom:10px; }
+  .card h3 { margin:0 0 6px; font-size:0.98rem; }
+  .card p { margin:0; color:var(--muted); font-size:0.9rem; }
+  .who { display:inline-block; font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase;
+         color:var(--accent); border:1px solid var(--line); border-radius:99px;
+         padding:2px 9px; margin-bottom:8px; }
+  .stat { display:flex; gap:28px; flex-wrap:wrap; border-top:1px solid var(--line);
+          border-bottom:1px solid var(--line); padding:16px 0; margin:8px 0 0; }
+  .stat div { min-width:110px; }
+  .stat b { display:block; font-size:1.3rem; font-family:ui-monospace,Consolas,monospace;
+            color:var(--ok); font-weight:600; }
+  .stat span { font-size:0.78rem; color:var(--muted); }
+  .note { color:var(--muted); font-size:0.88rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Campus Placement and Training Cell</h1>
+<p class="sub">Jakarta EE 10. Servlets, JSP with JSTL, session beans, a message driven bean,
+an interceptor, JNDI, JPA with Hibernate, and a JDBC layer over MySQL.</p>
+
+<div class="stat">
+  <div><b>126</b><span>tests, all passing</span></div>
+  <div><b>61</b><span>Java source files</span></div>
+  <div><b>18</b><span>JSP screens</span></div>
+  <div><b>0</b><span>things to install</span></div>
+</div>
+
+<h2>Running it</h2>
+<pre>Double click <b>start.bat</b>
+Shut it down with <b>stop.bat</b></pre>
+<p class="note">MySQL must be running on port 3306. Nothing else is needed:
+GlassFish and the JDK live inside the project folder.
+Portal at <code>http://localhost:8080/placement/</code></p>
+<table>
+  <tr><th>Role</th><th>Email</th><th>Password</th></tr>
+  <tr><td>Placement officer</td><td class="mono">tpo@campus.edu</td><td class="mono">Campus@2026</td></tr>
+  <tr><td>Student</td><td class="mono">aarti.deshpande@campus.edu</td><td class="mono">Campus@2026</td></tr>
+</table>
+
+<h2>The six minute demo</h2>
+<table>
+  <tr><th>Do this</th><th>What it proves</th></tr>
+  <tr><td>Sign in with <span class="mono">admin@campus</span></td>
+      <td>Validation refuses a malformed address before any query runs</td></tr>
+  <tr><td>As a student, open <b>Drives</b></td>
+      <td>Every eligibility rule checked, with the reason shown where it fails</td></tr>
+  <tr><td>As the officer, <b>Shortlist</b>, tick names</td>
+      <td>A stateful session bean holding your selection across requests</td></tr>
+  <tr><td><b>Reports</b>, filter with <span class="mono">' OR 1=1 --</span></td>
+      <td>Searched for as a branch name. The prepared statement is why</td></tr>
+  <tr><td><b>Database</b>, run <span class="mono">DROP TABLE student_profile</span></td>
+      <td>Refused three layers deep, and it names the layer that stopped it</td></tr>
+  <tr><td>As a student, open <span class="mono">/placement/admin/students</span></td>
+      <td>A 403 page, not a quiet redirect</td></tr>
+</table>
+<p class="note">Then run <code>test.ps1</code> in front of everyone. 126 green in under two seconds.</p>
+
+<h2>Pick a layer. You own the whole thing</h2>
+<p class="note" style="margin-bottom:14px">Nobody explains code somebody else wrote.
+Each layer has a full "be ready to explain" list waiting in <code>WORK-SPLIT.md</code>.</p>
+
+<div class="card">
+  <span class="who">Layer 1</span>
+  <h3>Domain model and persistence</h3>
+  <p>The JPA entities and how they become tables. The relationships, which side owns each
+  foreign key, Hibernate named as the provider, and the seeder that fills an empty database
+  on first start.</p>
+</div>
+<div class="card">
+  <span class="who">Layer 2</span>
+  <h3>JDBC, connectivity and reporting</h3>
+  <p>Everything about reaching the database. The connection pool, the prepared statements,
+  the hand written transaction, and the Reports and Database pages that read the live schema
+  from the driver itself.</p>
+</div>
+<div class="card">
+  <span class="who">Layer 3</span>
+  <h3>Servlets, session and security</h3>
+  <p>Who is asking, are they allowed, where does it go. Sign in and sign out, the filter in
+  front of every page, password hashing, the non blocking upload, the guarded download.</p>
+</div>
+<div class="card">
+  <span class="who">Layer 4</span>
+  <h3>Presentation, validation and rules</h3>
+  <p>All 18 screens, the stylesheet, every server side input rule, and the eligibility policy
+  written as pure logic so it can be tested with no database at all.</p>
+</div>
+
+<p class="note" style="margin-top:18px">The build scripts and a handful of service beans were
+shared work. If asked, say so. It is listed at the bottom of <code>WORK-SPLIT.md</code>.</p>
+
+</main>
+</body>
+</html>

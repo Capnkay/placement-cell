@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE resources PUBLIC
+        "-//GlassFish.org//DTD GlassFish Application Server 3.1 Resource Definitions//EN"
+        "https://raw.githubusercontent.com/eclipse-ee4j/glassfish/master/appserver/admin/dtds/src/main/resources/glassfish/lib/dtds/glassfish-resources_1_5.dtd">
+
+<!--
+    Datasource resource definition.
+
+    This file is the answer to "where does the database connection come from".
+    It is read by GlassFish when the application is deployed, and it creates two
+    things inside the server:
+
+      1. a connection pool, which opens a set of physical connections to MySQL
+         once and hands them out to the application on demand, because opening a
+         TCP connection and authenticating on every query would be far too slow
+      2. a JDBC resource, which publishes that pool in the naming service under
+         the name jdbc/placementDS
+
+    Nothing in the Java code contains a JDBC URL, a username or a password. The
+    code asks JNDI for "jdbc/placementDS" and the container hands back a pooled
+    DataSource. That is the point of declaring a resource: credentials and tuning
+    live in server configuration, not in a compiled class.
+
+    The same one resource is consumed two ways in this application:
+      Hibernate uses it through persistence.xml for the object relational mapping
+      PlacementReportDao uses it directly for the reporting SQL
+-->
+<resources>
+
+    <!--
+        The java:app/ prefix is not decoration. A resource declared inside an
+        application is application scoped: it is created when this WAR deploys
+        and destroyed when it undeploys, and it is published under java:app so it
+        cannot collide with a resource of the same name in another application on
+        the same server. Name it without the prefix and the container adds one
+        anyway, and the lookup in the code then fails to find it.
+    -->
+    <jdbc-connection-pool name="java:app/placementPool"
+                          datasource-classname="com.mysql.cj.jdbc.MysqlDataSource"
+                          res-type="javax.sql.DataSource"
+                          steady-pool-size="4"
+                          max-pool-size="24"
+                          idle-timeout-in-seconds="300"
+                          is-connection-validation-required="true"
+                          connection-validation-method="table"
+                          validation-table-name="DUAL"
+                          ping="true">
+
+        <property name="URL"
+                  value="jdbc:mysql://localhost:3306/placement_cell?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8&amp;rewriteBatchedStatements=true"/>
+        <property name="user" value="placement_user"/>
+        <property name="password" value="Placement@2026"/>
+    </jdbc-connection-pool>
+
+    <jdbc-resource pool-name="java:app/placementPool" jndi-name="java:app/jdbc/placementDS"/>
+
+</resources>

@@ -1,0 +1,95 @@
+<%--
+    Shared page opening, pulled into every view with the include directive so the
+    header, the navigation and the flash messages are written once.
+
+    Two things worth noticing: the theme comes straight out of a cookie through
+    the implicit EL object, and every flash message is removed after it is
+    printed so a refresh does not show it a second time.
+--%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<c:set var="me" value="${sessionScope.user}"/>
+<c:set var="theme" value="${empty cookie.portal_theme ? 'light' : cookie.portal_theme.value}"/>
+<%-- Only the path is carried into the theme link, never the query string, so an
+     ampersand in a filter cannot break the redirect back. --%>
+<c:set var="here" value="${pageContext.request.servletPath}"/>
+<!DOCTYPE html>
+<html lang="en" data-theme="${theme}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><c:out value="${pageTitle}"/> : Placement Cell</title>
+    <link rel="stylesheet" href="${ctx}/assets/app.css">
+    <link rel="stylesheet" href="${ctx}/assets/app2.css">
+    <link rel="icon" href="${ctx}/assets/favicon.svg" type="image/svg+xml">
+    <script src="${ctx}/assets/app.js" defer></script>
+</head>
+<body>
+<%@ include file="icons.jspf" %>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="${ctx}/${me.admin ? 'admin' : 'app'}/dashboard">
+            <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#logo"/></svg></span>
+            <span>Placement Cell</span>
+            <span class="brand-sub">${me.admin ? 'Officer' : 'Student'}</span>
+        </a>
+
+        <nav class="nav">
+            <c:choose>
+                <c:when test="${me.admin}">
+                    <a href="${ctx}/admin/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
+                    <a href="${ctx}/admin/drives" class="${activePage == 'drives' ? 'active' : ''}">Drives</a>
+                    <a href="${ctx}/admin/companies" class="${activePage == 'companies' ? 'active' : ''}">Companies</a>
+                    <a href="${ctx}/admin/students" class="${activePage == 'students' ? 'active' : ''}">Students</a>
+                    <a href="${ctx}/admin/applications" class="${activePage == 'applications' ? 'active' : ''}">Pipeline</a>
+                    <a href="${ctx}/admin/shortlist" class="${activePage == 'shortlist' ? 'active' : ''}">Shortlist</a>
+                    <a href="${ctx}/admin/reports" class="${activePage == 'reports' ? 'active' : ''}">Reports</a>
+                    <a href="${ctx}/admin/database" class="${activePage == 'database' ? 'active' : ''}">Database</a>
+                    <a href="${ctx}/admin/import" class="${activePage == 'import' ? 'active' : ''}">Import</a>
+                    <a href="${ctx}/admin/audit" class="${activePage == 'audit' ? 'active' : ''}">Audit</a>
+                    <a href="${ctx}/admin/system" class="${activePage == 'system' ? 'active' : ''}">System</a>
+                </c:when>
+                <c:otherwise>
+                    <a href="${ctx}/app/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
+                    <a href="${ctx}/app/drives" class="${activePage == 'drives' ? 'active' : ''}">Drives</a>
+                    <a href="${ctx}/app/applications" class="${activePage == 'applications' ? 'active' : ''}">Applications</a>
+                    <a href="${ctx}/app/profile" class="${activePage == 'profile' ? 'active' : ''}">Profile</a>
+                </c:otherwise>
+            </c:choose>
+        </nav>
+
+        <div class="topbar-right">
+            <a class="icon-btn" title="Switch to the ${theme == 'dark' ? 'light' : 'dark'} palette"
+               href="${ctx}/theme?mode=${theme == 'dark' ? 'light' : 'dark'}&amp;back=${here}">
+                <svg class="i i-sm"><use href="#i-${theme == 'dark' ? 'sun' : 'moon'}"/></svg>
+            </a>
+            <div class="who">
+                <strong><c:out value="${me.fullName}"/></strong>
+                <span><c:out value="${me.role.label}"/></span>
+            </div>
+            <span class="avatar">${me.initials}</span>
+            <a class="icon-btn" href="${ctx}/logout" title="Sign out">
+                <svg class="i i-sm"><use href="#i-logout"/></svg>
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="page">
+
+<c:if test="${not empty sessionScope.flashSuccess}">
+    <div class="alert alert-ok">
+        <svg class="i"><use href="#i-check"/></svg>
+        <div><c:out value="${sessionScope.flashSuccess}"/></div>
+    </div>
+    <c:remove var="flashSuccess" scope="session"/>
+</c:if>
+<c:if test="${not empty sessionScope.flashError}">
+    <div class="alert alert-bad">
+        <svg class="i"><use href="#i-alert"/></svg>
+        <div><c:out value="${sessionScope.flashError}"/></div>
+    </div>
+    <c:remove var="flashError" scope="session"/>
+</c:if>

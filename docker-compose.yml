@@ -1,0 +1,30 @@
+# Local smoke test for the Docker image, before trusting it to Render/Railway.
+# Not part of the graded deliverable — see HOSTING.md.
+#
+# The WAR baked into the image must already point at host "mysql" (the
+# compose service name), not "localhost" — see HOSTING.md step 1 for why
+# glassfish-resources.xml has to be edited and rebuilt before `docker build`.
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_only
+      MYSQL_DATABASE: placement_cell
+      MYSQL_USER: placement_user
+      MYSQL_PASSWORD: Placement@2026
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "4848:4848"
