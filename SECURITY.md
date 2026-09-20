@@ -88,6 +88,31 @@ survive. Confirmed: 0 rows in `audit_log` contain a password.
 in Derby pool, after the application had moved to MySQL. It now uses
 `java:app/jdbc/placementDS` like everything else.
 
+### S10 : registration accepted any address that merely looked like an email
+**Was:** `Validators.isEmail` only checked shape. `test@thisdomaindoesnotexist
+123.com` passed, and so did any well known disposable inbox, because both are
+well formed strings.
+**Now:** `EmailDomainVerifier`, called from `RegisterServlet` after the shape
+check passes. Two layers, both server side, both pure lookups: a DNS query for
+an MX record, falling back to A/AAAA per RFC 5321 (`javax.naming`, part of the
+JDK, three second timeout so a stalled resolver cannot hang the request), and
+a blocklist of roughly forty known disposable providers. A domain with neither
+kind of mail record, or a domain on the blocklist, is refused with a message
+distinct from the malformed address case.
+**What was deliberately left out:** actually sending a confirmation email or
+OTP. That needs SMTP credentials this project does not have, and a half built
+send flow is worse than none. A DNS lookup and a blocklist are what an honest,
+credential free version of this control can do; a confirmation link is the
+natural next step if mail credentials ever exist.
+**On a DNS error, not a DNS answer:** a lookup that throws (no resolver
+reachable, a timeout) fails open, logs a warning, and lets registration
+proceed, rather than turning a transient network problem into every real
+student being locked out. A lookup that completes and finds nothing still
+refuses the domain.
+**Tested by:** `EmailDomainVerifierTest`, skipped rather than failed if DNS is
+not reachable where the suite runs, the same pattern `DatabaseConnectivityTest`
+uses for MySQL.
+
 ---
 
 ## 2. Controls that were already in place

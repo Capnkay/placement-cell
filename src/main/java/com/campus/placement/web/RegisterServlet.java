@@ -3,6 +3,7 @@ package com.campus.placement.web;
 import com.campus.placement.ejb.AuthService;
 import com.campus.placement.entity.StudentProfile;
 import com.campus.placement.util.Branches;
+import com.campus.placement.util.EmailDomainVerifier;
 import com.campus.placement.util.Validators;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
@@ -68,6 +69,10 @@ public class RegisterServlet extends HttpServlet {
         }
         if (!Validators.isEmail(email)) {
             errors.put("email", "Enter a valid email address in the form name@example.com");
+        } else if (EmailDomainVerifier.isDisposableDomain(EmailDomainVerifier.domainOf(email))) {
+            errors.put("email", "Please use a permanent email address, not a disposable or temporary inbox.");
+        } else if (!EmailDomainVerifier.hasValidMxOrA(EmailDomainVerifier.domainOf(email))) {
+            errors.put("email", "That domain doesn't appear to accept email. Check for a typo and try again.");
         } else if (authService.emailTaken(email)) {
             errors.put("email", "An account already exists for that address. Try signing in instead.");
         }
