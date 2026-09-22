@@ -1,31 +1,91 @@
 # Campus Placement and Training Cell
 
-A Jakarta EE 10 web application: students see the drives their record actually
-qualifies them for, the placement officer runs the drives and moves candidates
-through the pipeline.
+A Jakarta EE 10 web application. Students see the drives their record
+actually qualifies them for; the placement officer runs the drives and moves
+candidates through the pipeline.
 
-Servlets, JSP with JSTL, MVC, session beans, a message driven bean, an
-interceptor, JNDI, JPA with Hibernate, and a JDBC layer over MySQL.
+Built on Servlets, JSP with JSTL, EJB (stateless, stateful, singleton, a
+message driven bean, an interceptor), JNDI, JPA with Hibernate, and a
+hand-written JDBC layer over MySQL.
+
+| | |
+|---|---|
+| **Server** | GlassFish 7.0.23 (private copy under `server\`, nothing installed on the machine) |
+| **Language / runtime** | Java 17 source level, run on a private JDK 21 |
+| **Database** | MySQL 8, reached through a JNDI connection pool |
+| **Persistence** | JPA, Hibernate named explicitly as the provider |
+| **Views** | JSP, JSTL and EL only, scriptlets disabled |
+| **Tests** | JUnit 5, 99 tests, run standalone with no Maven |
 
 ---
 
-## Running it
+## How a request moves through the system
+
+```mermaid
+flowchart TD
+    Browser["Browser"]
+    Filter["AuthFilter\nsession check, role check, CSRF"]
+    Servlet["Servlet\ncontroller"]
+    Bean["EJB session beans\nbusiness rules"]
+    JPA["JPA / Hibernate"]
+    JDBC["Hand-written JDBC layer\n(reports and admin database pages)"]
+    View["JSP view\nunder WEB-INF, JSTL and EL only"]
+    DB[("MySQL 8")]
+
+    Browser -->|HTTP request| Filter
+    Filter -->|blocked| Login["Redirect to login"]
+    Filter -->|allowed| Servlet
+    Servlet --> Bean
+    Servlet --> JDBC
+    Bean --> JPA
+    JPA --> DB
+    JDBC --> DB
+    Servlet -->|RequestDispatcher.forward| View
+    View -->|HTML response| Browser
+```
+
+A servlet never talks to `HttpServletResponse` directly with data. It calls an
+EJB (or the JDBC layer, for the reports and database pages), puts the result
+on the request, and forwards to a JSP. The JSP cannot be opened directly from
+a browser because it lives under `WEB-INF`.
+
+---
+
+## Getting started (first time on a machine)
+
+```mermaid
+flowchart LR
+    A["git clone"] --> B["Start MySQL 8\n(the MySQL80 service)"]
+    B --> C["Run the CREATE DATABASE\nscript once, in Workbench"]
+    C --> D[".\\setup.ps1\ndownloads GlassFish, JDK, drivers\ninto server\\ (one time only)"]
+    D --> E[".\\run.ps1\nbuilds, starts GlassFish, deploys"]
+    E --> F["http://localhost:8080/placement/"]
+```
+
+Every step after that is just `.\run.ps1` again, or `.\stop.ps1` to shut the
+server down. `setup.ps1` only needs to run once per machine; it is safe to
+run again and it skips anything already downloaded.
+
+---
+
+## Running it, step by step
 
 **Prerequisite:** the MySQL 8 service must be running on `localhost:3306`.
-Nothing else needs installing. GlassFish 7 and a private JDK 21 live under
-`server\` and are used in place, so the machine is left alone.
+Nothing else needs installing on the machine itself; GlassFish 7 and a
+private JDK 21 live under `server\` and run in place.
 
-**First time after cloning**, fetch GlassFish/JDK/drivers (gitignored, not in
-the repo):
+**1. First time after cloning**, fetch GlassFish, the JDK, and the drivers
+(all gitignored, not in the repo):
 
 ```powershell
 .\setup.ps1
 ```
 
-This only needs to run once per machine. Safe to re-run; it skips anything
-already downloaded.
+This downloads about 330 MB and only needs to run once per machine. Safe to
+re-run.
 
-First time only, in MySQL Workbench on the `root` connection:
+**2. First time only, create the database.** In MySQL Workbench, on the
+`root` connection:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS placement_cell
@@ -35,7 +95,7 @@ GRANT ALL PRIVILEGES ON placement_cell.* TO 'placement_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Then, from this folder in PowerShell:
+**3. Then, every time, from this folder in PowerShell:**
 
 ```powershell
 .\run.ps1        # compiles, starts GlassFish, deploys
@@ -51,9 +111,9 @@ Open **http://localhost:8080/placement/**
 | Placement officer | `tpo@campus.edu` | `Campus@2026` |
 | Student | `aarti.deshpande@campus.edu` | `Campus@2026` |
 
-The database fills itself on first start: 2 officers, 6 students, 4 companies,
-5 drives and a spread of applications. Restarting never wipes it, and the seeder
-does nothing if accounts already exist.
+The database fills itself on first start: 2 officers, 6 students, 4
+companies, 5 drives and a spread of applications. Restarting never wipes it,
+and the seeder does nothing if accounts already exist.
 
 ---
 
@@ -96,7 +156,7 @@ src/main/webapp/
   WEB-INF/glassfish-resources.xml   the connection pool and datasource
   assets/                 stylesheets
 src/test/java/            JUnit 5 tests
-server/                   GlassFish, JDK 21, MySQL driver, JUnit (not in git)
+server/                   GlassFish, JDK 21, MySQL driver, JUnit (gitignored, see setup.ps1)
 ```
 
 Who wrote what is in **WORK-SPLIT.md**. The security and code quality review,
@@ -104,10 +164,33 @@ including the risks that were deliberately accepted, is in **SECURITY.md**.
 
 ---
 
+## Working as a team
+
+```mermaid
+flowchart LR
+    Clone["git clone"] --> Setup[".\\setup.ps1\n(once per machine)"]
+    Setup --> Pull["git pull\nbefore starting work"]
+    Pull --> Branch["work on your own layer\n(see WORK-SPLIT.md)"]
+    Branch --> Test[".\\test.ps1\nbefore committing"]
+    Test --> Commit["git add / commit"]
+    Commit --> Push["git push"]
+    Push --> Pull
+```
+
+- Everyone owns a whole layer end to end (see **WORK-SPLIT.md**), so two
+  people are rarely editing the same file at the same time.
+- Pull before you start a session, run `.\test.ps1` before you commit, push
+  when it is green.
+- If two people do touch the same file, resolve the conflict by hand rather
+  than force-pushing over someone else's work.
+
+---
+
 ## Notes worth knowing
 
-- The MySQL driver is copied into `domain1\lib` by `run.ps1`, not bundled in the
-  WAR, because the pool is created before the application loads.
-- On some shells the detached `asadmin start-domain` fails and `run.ps1` falls
-  back to a hidden foreground process. The warning is expected, not a failure.
+- The MySQL driver is copied into `domain1\lib` by `run.ps1`, not bundled in
+  the WAR, because the pool is created before the application loads.
+- On some shells the detached `asadmin start-domain` fails and `run.ps1`
+  falls back to a hidden foreground process. The warning is expected, not a
+  failure.
 - Resumes are written outside the deployment so a redeploy cannot wipe them.
