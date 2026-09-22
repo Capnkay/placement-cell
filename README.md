@@ -157,10 +157,13 @@ src/main/webapp/
   assets/                 stylesheets
 src/test/java/            JUnit 5 tests
 server/                   GlassFish, JDK 21, MySQL driver, JUnit (gitignored, see setup.ps1)
+docs/                     WORK-SPLIT.md, SECURITY.md, TEAM-BRIEF.html
+deploy/                   Dockerfile, docker-compose.yml, HOSTING.md (parked, not in use)
 ```
 
-Who wrote what is in **WORK-SPLIT.md**. The security and code quality review,
-including the risks that were deliberately accepted, is in **SECURITY.md**.
+Who wrote what is in **[docs/WORK-SPLIT.md](docs/WORK-SPLIT.md)**. The
+security and code quality review, including the risks that were deliberately
+accepted, is in **[docs/SECURITY.md](docs/SECURITY.md)**.
 
 ---
 
@@ -177,8 +180,9 @@ flowchart LR
     Push --> Pull
 ```
 
-- Everyone owns a whole layer end to end (see **WORK-SPLIT.md**), so two
-  people are rarely editing the same file at the same time.
+- Everyone owns a whole layer end to end (see
+  **[docs/WORK-SPLIT.md](docs/WORK-SPLIT.md)**), so two people are rarely
+  editing the same file at the same time.
 - Pull before you start a session, run `.\test.ps1` before you commit, push
   when it is green.
 - If two people do touch the same file, resolve the conflict by hand rather

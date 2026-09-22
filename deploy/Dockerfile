@@ -15,6 +15,9 @@ ADD https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-conne
 
 # Auto-deployed on container start: the base image's entrypoint scans
 # DEPLOY_DIR and deploys everything in it.
+#
+# Build context is the repo root (see deploy/docker-compose.yml), not this
+# folder, so this path is relative to the root.
 COPY dist/placement.war ${DEPLOY_DIR}/placement.war
 
 EXPOSE 8080 4848

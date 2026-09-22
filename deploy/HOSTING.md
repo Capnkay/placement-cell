@@ -1,10 +1,16 @@
 # Getting this hosted
 
+**Parked.** The professor accepts a local demo (GlassFish + local MySQL via
+`run.ps1`), so this is not currently needed. Kept here in case that changes.
+
 Target: containerize with the `Dockerfile` in this folder, deploy to Render or
 Railway with a managed MySQL add-on. Not done yet — this is the procedure for
 when you're ready to actually do it. Docker isn't installed in the sandbox
 this was written in, so the image below is unverified; smoke-test it locally
 (last section) before trusting it to a real deploy.
+
+All commands below are run from the **repo root**, one level up from this
+file, since the build context has to include `dist/` and `src/`.
 
 ## Why this is more work than the other project
 
@@ -37,7 +43,7 @@ only swap the file in your working tree right before this build step.
 **2. Build the image.**
 
 ```powershell
-docker build -t placement-cell .
+docker build -t placement-cell -f deploy/Dockerfile .
 ```
 
 **3. Push it somewhere the host can pull from** (GitHub Container Registry is
@@ -69,12 +75,12 @@ there's no separate seed step on the host.
 ## Smoke-testing the image locally first
 
 ```powershell
-docker compose up --build
+docker compose -f deploy/docker-compose.yml up --build
 ```
 
 This starts MySQL 8 and the app together with the pool pointed at the
 compose network (see the note at the top of `docker-compose.yml` — the WAR
 you build for this test has to say `mysql`, not `localhost`, in its JDBC
 URL). Visit `http://localhost:8080/placement/`. Tear down with
-`docker compose down -v` when you're done — `-v` also drops the throwaway
-DB volume.
+`docker compose -f deploy/docker-compose.yml down -v` when you're done — `-v`
+also drops the throwaway DB volume.

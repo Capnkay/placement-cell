@@ -1,5 +1,9 @@
 # Local smoke test for the Docker image, before trusting it to Render/Railway.
-# Not part of the graded deliverable — see HOSTING.md.
+# Not part of the graded deliverable — see HOSTING.md in this folder.
+#
+# Run this from the repo root: docker compose -f deploy/docker-compose.yml up --build
+# (build context below is ".." for that reason, so COPY dist/placement.war in
+# the Dockerfile still resolves against the repo root.)
 #
 # The WAR baked into the image must already point at host "mysql" (the
 # compose service name), not "localhost" — see HOSTING.md step 1 for why
@@ -21,7 +25,9 @@ services:
       retries: 10
 
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     depends_on:
       mysql:
         condition: service_healthy
