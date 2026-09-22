@@ -15,6 +15,16 @@ interceptor, JNDI, JPA with Hibernate, and a JDBC layer over MySQL.
 Nothing else needs installing. GlassFish 7 and a private JDK 21 live under
 `server\` and are used in place, so the machine is left alone.
 
+**First time after cloning**, fetch GlassFish/JDK/drivers (gitignored, not in
+the repo):
+
+```powershell
+.\setup.ps1
+```
+
+This only needs to run once per machine. Safe to re-run; it skips anything
+already downloaded.
+
 First time only, in MySQL Workbench on the `root` connection:
 
 ```sql
