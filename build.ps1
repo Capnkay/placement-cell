@@ -28,7 +28,8 @@ $sources = Get-ChildItem $src -Recurse -Filter *.java | ForEach-Object { $_.Full
 Write-Host "  $($sources.Count) source files"
 
 $argfile = Join-Path $build 'sources.txt'
-$sources | ForEach-Object { '"' + ($_ -replace '\\', '/') + '"' } | Set-Content $argfile -Encoding UTF8
+$sourceLines = $sources | ForEach-Object { '"' + ($_ -replace '\\', '/') + '"' }
+[System.IO.File]::WriteAllLines($argfile, $sourceLines, [System.Text.Encoding]::ASCII)
 
 $cp = @(
     (Join-Path $modules '*'),

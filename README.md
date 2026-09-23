@@ -51,6 +51,57 @@ a browser because it lives under `WEB-INF`.
 
 ---
 
+## Servlets and database connectivity, briefly
+
+**Servlets.** Every request lands on `AuthFilter` first: session check, role
+check, CSRF token on POSTs. Past the filter, a servlet is a thin controller,
+one per screen or action (`LoginServlet`, `DriveApplyServlet`,
+`ReportsServlet`, `DatabaseExplorerServlet`, and so on). A servlet reads the
+request, calls an EJB or the JDBC layer for the work, puts the result on the
+request, and does a `RequestDispatcher.forward` to a JSP under `WEB-INF`, so
+no view can ever be opened directly by URL. `BulkImportServlet` is the one
+exception worth naming: it reads its multipart body asynchronously with a
+`ReadListener` instead of blocking a thread on I/O, which is why `AuthFilter`
+has to declare `asyncSupported`.
+
+**Database connectivity.** The database is reached two ways, through one
+shared pool:
+
+- **JPA, through Hibernate.** Entities under `entity/` are mapped in
+  `persistence.xml`, which names the JNDI datasource `java:app/jdbc/placementDS`
+  and Hibernate explicitly as the persistence provider. EJB session beans read
+  and write through the `EntityManager`; this covers ordinary CRUD, the
+  eligibility checks, and the applications pipeline.
+- **Hand-written JDBC, for reporting and administration.** `PlacementReportDao`
+  and `DatabaseExplorerDao` look up the same datasource directly from JNDI and
+  drive it by hand: `PreparedStatement`, bound `?` parameters, explicit
+  `ResultSet` reads, explicit `close()`. This is what backs the Reports and
+  Database pages, including the transaction in closing a drive
+  (`setAutoCommit(false)`, two updates, one `commit()`, `rollback()` on
+  failure) and the live query console, which is guarded by a statement
+  whitelist, a read only connection, and a database user scoped to one schema.
+
+Neither path holds a JDBC URL or a password in Java code. Both ask the
+container for `java:app/jdbc/placementDS`, defined once in
+`WEB-INF/glassfish-resources.xml`, so the connection pool is created and
+pooled by GlassFish and simply handed out on request. That pool is also why
+the driver has to be copied into `domain1\lib`, not bundled in the WAR: the
+pool exists before the application is deployed, so the application classloader
+is too late to supply it.
+
+**Other aspects worth knowing.** EJBs cover the rest of the business layer:
+stateless session beans for the eligibility rules and reporting-adjacent
+logic, a stateful session bean holding a shortlist selection across requests,
+a singleton (`DataSeeder`) that fills an empty database once at startup, a
+message driven bean picking up the JMS message an application queues, and an
+interceptor writing the audit trail on every entity write. Passwords are
+never stored or compared directly: `PasswordHasher` salts and hashes with
+PBKDF2, and a wrong password takes the same path and the same time as an
+unknown account. Views are JSP with JSTL and EL only, scriptlets are disabled
+in `web.xml`, so no Java is ever written into a page.
+
+---
+
 ## Getting started (first time on a machine)
 
 ```mermaid

@@ -83,8 +83,17 @@ if (Test-Port 8080) {
 }
 else {
     Write-Host 'Starting the GlassFish domain' -ForegroundColor Cyan
-    & $asadmin start-domain domain1 2>&1 |
-            Where-Object { $_ -match '\S' } | ForEach-Object { "  $_" }
+    try {
+        & $asadmin start-domain domain1 2>&1 |
+                Where-Object { $_ -match '\S' } | ForEach-Object { "  $_" }
+    }
+    catch {
+        # Some shells cannot hand the detached launcher a console and asadmin
+        # reports that as a terminating error under $ErrorActionPreference =
+        # 'Stop'. The fallback below (a hidden foreground process) is what
+        # actually determines success, via Wait-ForPort.
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 
     if (-not (Wait-ForPort 8080 20)) {
         # Some shells cannot hand the launcher a console, and the detached server
