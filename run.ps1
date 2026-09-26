@@ -10,7 +10,11 @@
 # already: this project uses the MySQL Community Server on localhost.
 
 param(
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    # Empties every table before the deploy so the seeder fills the database again.
+    # The seeded dates are worked out from the day it runs, so use this on the
+    # morning of a demo to make sure every drive is open and nothing has expired.
+    [switch]$Reseed
 )
 
 $ErrorActionPreference = 'Stop'
@@ -70,6 +74,24 @@ if (-not (Test-Port 3306)) {
     exit 1
 }
 Write-Host 'MySQL is up on 3306' -ForegroundColor DarkGray
+
+if ($Reseed) {
+    $mysql = (Get-Command mysql -ErrorAction SilentlyContinue).Source
+    if (-not $mysql) {
+        $mysql = (Get-ChildItem 'C:\Program Files\MySQL' -Recurse -Filter mysql.exe -ErrorAction SilentlyContinue |
+                Select-Object -First 1).FullName
+    }
+    if (-not $mysql) { throw 'mysql.exe was not found, so the tables cannot be emptied' }
+
+    Write-Host 'Emptying the tables so the seeder starts from scratch' -ForegroundColor Cyan
+    $env:MYSQL_PWD = 'Placement@2026'
+    $tables = 'audit_log', 'job_application', 'drive', 'company', 'student_profile', 'app_user'
+    $sql = 'SET FOREIGN_KEY_CHECKS=0; ' + (($tables | ForEach-Object { "TRUNCATE TABLE $_;" }) -join ' ') +
+            ' DROP TABLE IF EXISTS mock_score; SET FOREIGN_KEY_CHECKS=1;'
+    & $mysql -u placement_user -h 127.0.0.1 placement_cell -e $sql
+    if ($LASTEXITCODE -ne 0) { throw 'Emptying the tables failed' }
+    Remove-Item Env:MYSQL_PWD
+}
 
 # A driver dropped in after the domain started is not visible to it, so restart.
 if ($driverJustCopied -and (Test-Port 8080)) {

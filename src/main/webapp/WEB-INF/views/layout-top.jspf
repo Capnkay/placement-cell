@@ -61,7 +61,7 @@
                         <c:set var="inRecruitment"
                                value="${activePage == 'drives' || activePage == 'companies' || activePage == 'applications' || activePage == 'shortlist'}"/>
                         <c:set var="inTools"
-                               value="${activePage == 'database' || activePage == 'import' || activePage == 'audit' || activePage == 'system'}"/>
+                               value="${activePage == 'database' || activePage == 'import' || activePage == 'audit' || activePage == 'system' || activePage == 'classroom'}"/>
 
                         <a href="${ctx}/admin/dashboard" class="${activePage == 'dashboard' ? 'active' : ''}">Overview</a>
 
@@ -96,6 +96,7 @@
                                 <a href="${ctx}/admin/database" class="${activePage == 'database' ? 'active' : ''}">Database</a>
                                 <a href="${ctx}/admin/import" class="${activePage == 'import' ? 'active' : ''}">Import</a>
                                 <a href="${ctx}/admin/audit" class="${activePage == 'audit' ? 'active' : ''}">Audit</a>
+                                <a href="${ctx}/admin/classroom-jdbc" class="${activePage == 'classroom' ? 'active' : ''}">Classroom JDBC</a>
                                 <a href="${ctx}/admin/system" class="${activePage == 'system' ? 'active' : ''}">System</a>
                             </div>
                         </div>

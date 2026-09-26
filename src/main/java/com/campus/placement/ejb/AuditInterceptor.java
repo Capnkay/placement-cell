@@ -28,6 +28,10 @@ public class AuditInterceptor {
 
     private static final Logger LOG = Logger.getLogger(AuditInterceptor.class.getName());
 
+    private static final String[] READ_ONLY_PREFIXES = {
+        "has", "for", "list", "find", "count", "placed", "statusBreakdown", "search", "check"
+    };
+
     /**
      * The row is written through a bean rather than an entity manager held here,
      * because many audited methods are read only and run with no transaction.
@@ -43,14 +47,32 @@ public class AuditInterceptor {
         long started = System.nanoTime();
         String method = ctx.getTarget().getClass().getSimpleName().replaceAll("\\$\\$.*", "")
                 + "." + ctx.getMethod().getName();
+        boolean readOnly = isReadOnly(ctx.getMethod().getName());
         try {
             Object result = ctx.proceed();
-            write(method, describe(ctx), millisSince(started), null);
+            if (!readOnly) {
+                write(method, describe(ctx), millisSince(started), null);
+            }
             return result;
         } catch (Exception ex) {
             write(method, describe(ctx), millisSince(started), ex);
             throw ex;
         }
+    }
+
+    /**
+     * Lookups and counts change nothing, and the pages call them dozens of times
+     * per request, so a row for each would bury the writes an auditor wants to
+     * see. A read that fails is still recorded, because a failure is worth
+     * knowing about.
+     */
+    private boolean isReadOnly(String methodName) {
+        for (String prefix : READ_ONLY_PREFIXES) {
+            if (methodName.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return methodName.endsWith("Taken");
     }
 
     private long millisSince(long startedNanos) {
@@ -81,10 +103,29 @@ public class AuditInterceptor {
             } else if (params[i] == null) {
                 rendered.append("null");
             } else {
-                rendered.append(shorten(String.valueOf(params[i])));
+                rendered.append(shorten(label(params[i])));
             }
         }
         return shorten(rendered.toString());
+    }
+
+    /**
+     * Plain values print as themselves. An entity has no useful toString, so it
+     * is shown as its type and id, for example {@code StudentProfile#12}, which
+     * is what someone reading the trail can look up.
+     */
+    private String label(Object value) {
+        if (value instanceof CharSequence || value instanceof Number
+                || value instanceof Boolean || value instanceof Enum) {
+            return String.valueOf(value);
+        }
+        String type = value.getClass().getSimpleName();
+        try {
+            Object id = value.getClass().getMethod("getId").invoke(value);
+            return type + "#" + id;
+        } catch (ReflectiveOperationException ex) {
+            return type;
+        }
     }
 
     private boolean isSecret(String parameterName) {
