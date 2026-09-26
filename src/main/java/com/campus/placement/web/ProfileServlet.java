@@ -46,6 +46,11 @@ public class ProfileServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if (Web.current(request).isAdmin()) {
+            // An officer has no academic record to show, so there is no profile page.
+            Web.redirect(request, response, "/admin/dashboard");
+            return;
+        }
         show(request, response, null, null);
     }
 
@@ -55,13 +60,26 @@ public class ProfileServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
         SessionUser user = Web.current(request);
+        if (user.isAdmin()) {
+            Web.redirect(request, response, "/admin/dashboard");
+            return;
+        }
         StudentProfile profile = studentService.find(user.getStudentProfileId());
         if (profile == null) {
             Web.redirect(request, response, "/logout");
             return;
         }
 
-        String action = Validators.trim(request.getParameter("action"));
+        // On a multipart form the first parameter read makes the container parse
+        // the whole body, and it refuses a file over the limit right here.
+        String action;
+        try {
+            action = Validators.trim(request.getParameter("action"));
+        } catch (RuntimeException tooLarge) {
+            Web.flashError(request, "That file is larger than the two megabyte limit.");
+            Web.redirect(request, response, "/app/profile");
+            return;
+        }
         switch (action) {
             case "details" -> saveDetails(request, response, profile);
             case "password" -> changePassword(request, response, user);

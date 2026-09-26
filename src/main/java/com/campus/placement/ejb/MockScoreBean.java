@@ -1,5 +1,6 @@
 package com.campus.placement.ejb;
 
+import jakarta.ejb.Remove;
 import jakarta.ejb.Stateful;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -50,8 +51,16 @@ public class MockScoreBean {
         }
     }
 
-    /** Classroom style. Compare with {@code MarksEntryBean.addMarks}. */
-    public void addScore(String sname, int m1, int m2, int m3) {
+    /**
+     * Classroom style. Compare with {@code MarksEntryBean.addMarks}, which is
+     * {@code void} and only prints a failure. This one reports how many rows it
+     * saved, so the page can tell the truth: a name with an apostrophe, such as
+     * O'Brien, ends the SQL string early, the statement is rejected, and the
+     * result is 0. That failure is the everyday face of SQL injection.
+     *
+     * @return the number of rows inserted, 0 when the statement failed
+     */
+    public int addScore(String sname, int m1, int m2, int m3) {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -61,9 +70,10 @@ public class MockScoreBean {
                     + "aptitude int not null, technical int not null, interview int not null)");
             String query = "insert into mock_score(sname,aptitude,technical,interview) values('" + sname + "'  ,"
                     + m1 + "  ," + m2 + "  ," + m3 + ")";
-            st.executeUpdate(query);
+            return st.executeUpdate(query);
         } catch (Exception e) {
             System.out.println(e);
+            return 0;
         }
     }
 
@@ -99,6 +109,16 @@ public class MockScoreBean {
             }
         }
         return scores;
+    }
+
+    /**
+     * Ends the conversation. A stateful bean lives until it is removed or times
+     * out, so a caller that only needs it once says so, exactly as the shortlist
+     * bean's {@code finish} does.
+     */
+    @Remove
+    public void finished() {
+        // Nothing to release: each method above opens and closes its own connection.
     }
 
     private Connection pooled() throws SQLException {

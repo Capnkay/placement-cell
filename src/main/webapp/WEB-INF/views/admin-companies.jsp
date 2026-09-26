@@ -49,7 +49,7 @@
                                     <td class="right nowrap">
                                         <a class="btn btn-sm" href="${ctx}/admin/companies?edit=${co.id}">Edit</a>
                                         <form class="inline-form" method="post" action="${ctx}/admin/companies"
-                                              data-confirm="Remove ${co.name} from the register?">
+                                              data-confirm="Remove <c:out value='${co.name}'/> from the register?">
                                             <input type="hidden" name="csrf" value="${csrf}">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="id" value="${co.id}">

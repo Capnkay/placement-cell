@@ -98,7 +98,7 @@
                     <c:choose>
                         <c:when test="${profile.user.active}">
                             <form class="inline-form" method="post" action="${ctx}/admin/student"
-                                  data-confirm="Stop ${profile.user.fullName} from signing in?">
+                                  data-confirm="Stop <c:out value='${profile.user.fullName}'/> from signing in?">
                                 <input type="hidden" name="csrf" value="${csrf}">
                                 <input type="hidden" name="id" value="${profile.id}">
                                 <input type="hidden" name="action" value="suspend">
@@ -126,7 +126,7 @@
                 </div>
 
                 <form class="mt-2" method="post" action="${ctx}/admin/student"
-                      data-confirm="Remove ${profile.user.fullName} and every application? This cannot be undone.">
+                      data-confirm="Remove <c:out value='${profile.user.fullName}'/> and every application? This cannot be undone.">
                     <input type="hidden" name="csrf" value="${csrf}">
                     <input type="hidden" name="id" value="${profile.id}">
                     <input type="hidden" name="action" value="delete">

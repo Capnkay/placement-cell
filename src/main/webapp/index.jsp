@@ -2,8 +2,8 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%--
     The welcome file. It holds no markup at all: it decides where the visitor
-    belongs and forwards there. jsp:forward is the action element that hands the
-    request on inside the server, so the browser never sees this page.
+    belongs and sends them there with the JSTL c:redirect tag. That is a redirect,
+    not a forward, so the browser is told to ask for the new address.
 --%>
 <c:choose>
     <c:when test="${empty sessionScope.user}">

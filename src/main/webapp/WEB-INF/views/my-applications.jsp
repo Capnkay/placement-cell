@@ -49,7 +49,7 @@
                                 <c:choose>
                                     <c:when test="${a.status == 'APPLIED'}">
                                         <form class="inline-form" method="post" action="${ctx}/app/withdraw"
-                                              data-confirm="Withdraw your application to ${a.drive.company.name}?">
+                                              data-confirm="Withdraw your application to <c:out value='${a.drive.company.name}'/>?">
                                             <input type="hidden" name="csrf" value="${csrf}">
                                             <input type="hidden" name="applicationId" value="${a.id}">
                                             <button class="btn btn-sm btn-danger" type="submit">Withdraw</button>

@@ -50,7 +50,7 @@ public class AuthFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
 
-        String path = request.getRequestURI().substring(request.getContextPath().length());
+        String path = RequestPaths.canonical(request.getRequestURI(), request.getContextPath());
 
         HttpSession session = request.getSession(false);
         SessionUser user = session == null ? null : (SessionUser) session.getAttribute(Web.SESSION_USER);
@@ -60,14 +60,26 @@ public class AuthFilter implements Filter {
             return;
         }
 
-        if (path.startsWith("/admin/") && !user.isAdmin()) {
+        if (RequestPaths.isAdminPath(path) && !user.isAdmin()) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             request.setAttribute("deniedPath", path);
             request.getRequestDispatcher("/WEB-INF/views/error-403.jsp").forward(request, response);
             return;
         }
 
-        if ("POST".equalsIgnoreCase(request.getMethod()) && !Web.csrfValid(request)) {
+        boolean tokenOk;
+        try {
+            tokenOk = !"POST".equalsIgnoreCase(request.getMethod()) || Web.csrfValid(request);
+        } catch (RuntimeException tooLarge) {
+            // Reading the token from a multipart body makes the container parse
+            // the whole upload, and it refuses one over the configured limit.
+            // That is a user's oversize file, not a server fault, so say so.
+            Web.flashError(request, "That file is larger than the two megabyte limit.");
+            response.sendRedirect(request.getContextPath()
+                    + (user.isAdmin() ? "/admin/dashboard" : "/app/profile"));
+            return;
+        }
+        if (!tokenOk) {
             Web.flashError(request,
                     "That form could not be verified, most likely because it sat open too long. "
                             + "Please try the action again.");

@@ -36,7 +36,9 @@ public class ClassroomJdbcServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setAttribute("csrf", Web.csrfToken(request.getSession()));
         try {
-            request.setAttribute("scores", bean().latest());
+            MockScoreBean bean = bean();
+            request.setAttribute("scores", bean.latest());
+            bean.finished();
         } catch (SQLException | NamingException ex) {
             request.setAttribute(Web.ATTR_ERROR, "The scores could not be read: " + ex.getMessage());
         }
@@ -60,13 +62,20 @@ public class ClassroomJdbcServlet extends HttpServlet {
         } else {
             try {
                 MockScoreBean bean = bean();
+                boolean saved = true;
                 if (classroom) {
-                    bean.addScore(name, aptitude, technical, interview);
+                    saved = bean.addScore(name, aptitude, technical, interview) == 1;
                 } else {
                     bean.addScoreSafely(name, aptitude, technical, interview);
                 }
-                Web.flashSuccess(request, "Saved " + name + " using the "
-                        + (classroom ? "classroom (Statement)" : "pooled (PreparedStatement)") + " method.");
+                bean.finished();
+                if (saved) {
+                    Web.flashSuccess(request, "Saved " + name + " using the "
+                            + (classroom ? "classroom (Statement)" : "pooled (PreparedStatement)") + " method.");
+                } else {
+                    Web.flashError(request, "The classroom method could not save " + name + ". Its SQL was built "
+                            + "by joining strings, and the name changed the statement. The pooled method saves it.");
+                }
             } catch (SQLException | NamingException ex) {
                 Web.flashError(request, "The score could not be saved: " + ex.getMessage());
             }

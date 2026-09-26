@@ -10,6 +10,7 @@ import com.campus.placement.entity.JobApplication;
 import com.campus.placement.entity.StudentProfile;
 import com.campus.placement.util.Validators;
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -121,6 +122,17 @@ public class ApplicationServlet extends HttpServlet {
             Web.flashError(request, "That application does not belong to you.");
         } catch (IllegalStateException ex) {
             Web.flashError(request, ex.getMessage());
+        } catch (EJBException ex) {
+            // A runtime exception thrown inside a session bean reaches the caller
+            // wrapped in EJBException, so the reason has to be read from the cause.
+            Throwable cause = ex.getCause();
+            if (cause instanceof SecurityException) {
+                Web.flashError(request, "That application does not belong to you.");
+            } else if (cause instanceof IllegalStateException) {
+                Web.flashError(request, cause.getMessage());
+            } else {
+                Web.flashError(request, "That application could not be withdrawn. Please try once more.");
+            }
         }
         Web.redirect(request, response, "/app/applications");
     }
