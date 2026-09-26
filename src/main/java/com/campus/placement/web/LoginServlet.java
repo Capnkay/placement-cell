@@ -60,6 +60,20 @@ public class LoginServlet extends HttpServlet {
         request.setAttribute("reason", Validators.trim(request.getParameter("reason")));
         request.setAttribute("next", safeNext(request.getParameter("next")));
         request.setAttribute("rememberedEmail", readCookie(request, Web.COOKIE_REMEMBER_EMAIL));
+
+        // Someone who has just registered arrives here once. Show them a welcome,
+        // fill in their email, and put the cursor where the next keystroke belongs.
+        String welcomeEmail = (String) session.getAttribute(Web.SESSION_WELCOME_EMAIL);
+        if (welcomeEmail != null) {
+            String fullName = (String) session.getAttribute(Web.SESSION_WELCOME_NAME);
+            request.setAttribute("welcomeName", fullName == null ? "" : firstName(fullName));
+            request.setAttribute("welcomeEmail", welcomeEmail);
+            request.setAttribute("welcomeRoll", session.getAttribute(Web.SESSION_WELCOME_ROLL));
+            request.setAttribute("email", welcomeEmail);
+            session.removeAttribute(Web.SESSION_WELCOME_NAME);
+            session.removeAttribute(Web.SESSION_WELCOME_EMAIL);
+            session.removeAttribute(Web.SESSION_WELCOME_ROLL);
+        }
         request.setAttribute("lastVisit", readCookie(request, Web.COOKIE_LAST_VISIT));
 
         request.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(request, response);
@@ -105,13 +119,18 @@ public class LoginServlet extends HttpServlet {
         Web.csrfToken(session);
         stats.recordLogin();
 
+        // No last visit cookie means this browser has never signed in here, so
+        // "welcome back" would be wrong. Read it before the cookie is rewritten.
+        boolean firstVisit = readCookie(request, Web.COOKIE_LAST_VISIT) == null
+                || readCookie(request, Web.COOKIE_LAST_VISIT).isEmpty();
         writeCookie(request, response, Web.COOKIE_REMEMBER_EMAIL,
                 remember ? user.getEmail() : null, REMEMBER_DAYS);
         writeCookie(request, response, Web.COOKIE_LAST_VISIT,
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")),
                 REMEMBER_DAYS);
 
-        Web.flashSuccess(request, "Welcome back, " + user.getFullName() + ".");
+        Web.flashSuccess(request, (firstVisit ? "Welcome to the placement cell, " : "Welcome back, ")
+                + user.getFullName() + ".");
 
         if (!next.isEmpty() && (!next.startsWith("/admin/") || sessionUser.isAdmin())) {
             Web.redirect(request, response, next);
@@ -137,6 +156,13 @@ public class LoginServlet extends HttpServlet {
      * a scheme, a host or a protocol relative prefix is dropped, so the login
      * form cannot be turned into an open redirect.
      */
+    /** "Demo Student" becomes "Demo", which is how a welcome should sound. */
+    private String firstName(String fullName) {
+        String trimmed = fullName.trim();
+        int space = trimmed.indexOf(' ');
+        return space > 0 ? trimmed.substring(0, space) : trimmed;
+    }
+
     private String safeNext(String candidate) {
         String value = Validators.trim(candidate);
         if (value.isEmpty()

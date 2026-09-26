@@ -9,9 +9,12 @@
 <body>
 <main>
 
+<header class="cover"><div class="cover-inner">
+<div class="brandrow"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V13"/><path d="M19 19V13"/><path d="M5 13C5 6 19 6 19 13"/></svg></span><b>Placement Cell</b><span class="dot">/</span><span>Advanced Java team pack</span></div>
 <span class="who">Karan</span>
 <h1>The app itself: users, data, flows and the demo</h1>
 <p class="sub">You open the presentation and explain what the app is, who uses it, how data moves, and you run the walkthrough.</p>
+</div></header>
 
 <h2>1. Your role in one sentence</h2>
 <p>You explain the application as a whole, and you own the code that turns each screen into an action: the student and
@@ -53,9 +56,9 @@ officer flows, the dashboards, and the demo data.</p>
 <h2>4. The story, step by step</h2>
 <h3>A student's journey</h3>
 <ol class="steps">
-  <li><b>Register</b> at <code>/register</code>. Name, college email, password, roll number, branch, year, CGPA, backlogs, phone. The row goes to <code>app_user</code> and <code>student_profile</code>. (Tiya explains how.)</li>
+  <li><b>Register</b> at <code>/register</code>. Name, college email, password, roll number, branch, year, CGPA, backlogs, phone. The row goes to <code>app_user</code> and <code>student_profile</code>. The sign in page then shows a "Welcome, your account is ready" panel with the email filled in. (Tiya explains how.)</li>
   <li><b>Sign in</b> at <code>/login</code>. The servlet checks the password hash and stores a small <code>SessionUser</code> in the HttpSession.</li>
-  <li><b>Dashboard</b> at <code>/app/dashboard</code>: profile summary, counts of your applications by status, how many open drives you can still apply to, and a note if the resume or phone number is missing.</li>
+  <li><b>Dashboard</b> at <code>/app/dashboard</code>: profile summary, counts of your applications by status, how many open drives you can still apply to, and, for a new student, a getting started checklist (create account, finish profile, apply to a first drive) with a progress bar and the next button to press.</li>
   <li><b>Drives board</b> at <code>/app/drives</code>. <code>DriveBrowseServlet</code> asks <code>DriveService.check</code> for each open drive and shows the verdict.</li>
   <li><b>Apply</b>: open a drive, press Apply. <code>ApplicationServlet.doPost</code> checks the rules again, then <code>ApplicationService.apply</code> writes the row and queues a notification message.</li>
   <li><b>Follow it</b> at <code>/app/applications</code>: status and the cell's latest note. A student may withdraw.</li>

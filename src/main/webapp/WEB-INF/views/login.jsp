@@ -51,8 +51,30 @@
 
     <main class="auth-main">
         <div class="auth-box">
-            <h2>Sign in</h2>
-            <p class="lede">Use the email address the college has on record.</p>
+            <c:choose>
+                <c:when test="${not empty welcomeEmail}">
+                    <div class="welcome" role="status">
+                        <span class="welcome-tick"><svg class="i"><use href="#i-check"/></svg></span>
+                        <h2><c:choose>
+                            <c:when test="${not empty welcomeName}">Welcome, <c:out value="${welcomeName}"/>. Your account is ready.</c:when>
+                            <c:otherwise>Your account is ready.</c:otherwise>
+                        </c:choose></h2>
+                        <p class="welcome-who">
+                            <span class="mono"><c:out value="${welcomeEmail}"/></span>
+                            <span class="sep">&#183;</span> roll no. <c:out value="${welcomeRoll}"/>
+                        </p>
+                        <ol class="welcome-steps">
+                            <li class="now"><span>1</span> Sign in below with the password you just chose</li>
+                            <li><span>2</span> Add your resume on your profile</li>
+                            <li><span>3</span> Apply to the drives you qualify for</li>
+                        </ol>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <h2>Sign in</h2>
+                    <p class="lede">Use the email address the college has on record.</p>
+                </c:otherwise>
+            </c:choose>
 
             <c:if test="${not empty sessionScope.flashSuccess}">
                 <div class="alert alert-ok">
@@ -83,7 +105,7 @@
                 <div class="field">
                     <label for="email">Email address</label>
                     <input type="email" id="email" name="email" autocomplete="username"
-                           inputmode="email" maxlength="190" required autofocus
+                           inputmode="email" maxlength="190" required ${empty welcomeEmail ? 'autofocus' : ''}
                            placeholder="name@campus.edu"
                            value="<c:out value='${not empty email ? email : rememberedEmail}'/>"
                            aria-invalid="${not empty error ? 'true' : 'false'}">
@@ -93,6 +115,7 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password"
                            autocomplete="current-password" maxlength="128" required
+                           ${not empty welcomeEmail ? 'autofocus' : ''}
                            aria-invalid="${not empty error ? 'true' : 'false'}">
                 </div>
 
@@ -103,7 +126,7 @@
                     </label>
                 </div>
 
-                <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+                <button class="btn btn-primary btn-block" type="submit">${empty welcomeEmail ? 'Sign in' : 'Sign in to your new account'}</button>
             </form>
 
             <p class="small muted mt-2">

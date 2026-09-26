@@ -9,9 +9,12 @@
 <body>
 <main>
 
+<header class="cover"><div class="cover-inner">
+<div class="brandrow"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V13"/><path d="M19 19V13"/><path d="M5 13C5 6 19 6 19 13"/></svg></span><b>Placement Cell</b><span class="dot">/</span><span>Advanced Java team pack</span></div>
 <span class="who">Tiya</span>
 <h1>Accounts, sessions and security</h1>
 <p class="sub">You answer every question about how someone gets in, how they stay in, and what stops the wrong person getting further.</p>
+</div></header>
 
 <h2>1. Your role in one sentence</h2>
 <p>You own the front door: creating an account, proving who a person is, keeping them signed in safely, and refusing anyone who is not allowed on a page.</p>
@@ -111,7 +114,7 @@
       <br><i>Say:</i> "The address is well formed, so the shape check passes. The domain has no DNS record, so the second check refuses it."
       <br><b>Optional:</b> use <code>x@mailinator.com</code> to show "Please use a permanent email address, not a disposable or temporary inbox."</li>
   <li><b>Valid sign up.</b> Change only the email to your real one, for example <code>yourname@gmail.com</code>, and type the passwords again. Submit.
-      <br><b>Expect:</b> a redirect to the sign in page with a green banner "Account created for DEMO001. Sign in with your email address to continue."
+      <br><b>Expect:</b> a redirect to the sign in page showing a green panel with a tick, "Welcome, Demo. Your account is ready.", the email and roll number, and three steps with step 1 highlighted. The email is already filled in, the cursor is in the password field, and the button reads "Sign in to your new account". Reload the page and the panel is gone: it is shown once (RegisterServlet puts three values in the session, LoginServlet reads and removes them).
       <br><i>Say:</i> "That was a POST followed by a redirect, so pressing refresh cannot create the account twice."</li>
   <li><b>Show the stored password.</b> Open PowerShell and run:
 <pre><code>$env:MYSQL_PWD = 'Placement@2026'
@@ -127,7 +130,7 @@
       Repeat with <code>nobody.here@gmail.com</code>: the identical sentence.
       <br><i>Say:</i> "We never say which half was wrong. A stranger cannot use this form to find out who has an account."</li>
   <li><b>Correct login.</b> Enter your email and <code>Demo@12345</code>, tick "Remember my email on this device", sign in.
-      <br><b>Expect:</b> a redirect to <code>/placement/app/dashboard</code> with "Welcome back". In devtools, Application, Cookies: <code>JSESSIONID</code>,
+      <br><b>Expect:</b> a redirect to <code>/placement/app/dashboard</code> with "Welcome to the placement cell" on the first sign in from a browser, and "Welcome back" after that. In devtools, Application, Cookies: <code>JSESSIONID</code>,
       <code>remember_email</code> and <code>last_visit</code>, all HttpOnly, path <code>/placement</code>. In Network, open any page and show the
       <code>Content-Security-Policy</code> response header.
       <br><i>Say:</i> "The session id was replaced at this moment. The user object in the session holds the id, email and role, never the hash."</li>

@@ -19,6 +19,9 @@ public final class Web {
     public static final String SESSION_USER = "user";
     public static final String SESSION_CSRF = "csrfToken";
     public static final String SESSION_SHORTLIST = "shortlistBean";
+    public static final String SESSION_WELCOME_NAME = "welcomeName";
+    public static final String SESSION_WELCOME_EMAIL = "welcomeEmail";
+    public static final String SESSION_WELCOME_ROLL = "welcomeRoll";
     public static final String FLASH_SUCCESS = "flashSuccess";
     public static final String FLASH_ERROR = "flashError";
     public static final String ATTR_ERROR = "error";

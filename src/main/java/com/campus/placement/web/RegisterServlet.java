@@ -11,6 +11,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.Year;
 import java.util.LinkedHashMap;
@@ -121,8 +122,13 @@ public class RegisterServlet extends HttpServlet {
         try {
             StudentProfile profile = authService.registerStudent(email, password, fullName,
                     rollNo, branch, batchYear, cgpa, backlogs, phone);
-            Web.flashSuccess(request, "Account created for " + profile.getRollNo()
-                    + ". Sign in with your email address to continue.");
+            // The sign in page turns these into a proper welcome, with the email
+            // already filled in and the cursor in the password field. They are read
+            // once and removed, so a later visit to /login is a plain sign in.
+            HttpSession session = request.getSession(true);
+            session.setAttribute(Web.SESSION_WELCOME_NAME, fullName);
+            session.setAttribute(Web.SESSION_WELCOME_EMAIL, email);
+            session.setAttribute(Web.SESSION_WELCOME_ROLL, profile.getRollNo());
             Web.redirect(request, response, "/login");
         } catch (IllegalArgumentException ex) {
             errors.put("form", ex.getMessage());

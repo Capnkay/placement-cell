@@ -3,6 +3,11 @@
 <c:set var="pageTitle" value="Student" scope="request"/>
 <%@ include file="layout-top.jspf" %>
 
+<nav class="crumbs" aria-label="Breadcrumb">
+    <a href="${ctx}/admin/students">Students</a><span aria-hidden="true">/</span>
+    <span aria-current="page"><c:out value="${profile.user.fullName}"/></span>
+</nav>
+
 <div class="page-head">
     <div>
         <h1><c:out value="${profile.user.fullName}"/></h1>

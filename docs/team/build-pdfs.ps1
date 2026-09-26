@@ -16,7 +16,7 @@ $chrome = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $chrome) { throw 'Chrome or Edge is needed to print the PDFs' }
 
-Get-ChildItem $here -Filter '*.html' | Sort-Object Name | ForEach-Object {
+Get-ChildItem $here -Filter '0*.html' | Sort-Object Name | ForEach-Object {
     $pdf = Join-Path $out ($_.BaseName + '.pdf')
     $url = ([System.Uri]$_.FullName).AbsoluteUri
     # Chrome reports its progress on stderr, which a strict shell reads as a failure,
@@ -33,4 +33,6 @@ Get-ChildItem $here -Filter '*.html' | Sort-Object Name | ForEach-Object {
         Write-Host "  $($_.BaseName) FAILED" -ForegroundColor Red
     }
 }
+$python = Get-Command python -ErrorAction SilentlyContinue
+if ($python) { & $python.Source (Join-Path $here 'merge-pdfs.py') }
 Write-Host "PDFs are in $out"

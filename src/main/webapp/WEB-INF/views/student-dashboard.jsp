@@ -25,12 +25,53 @@
     </div>
 </c:if>
 
-<c:if test="${not profileComplete}">
-    <div class="alert alert-warn">
-        <svg class="i"><use href="#i-alert"/></svg>
-        <div>Your profile is missing a resume or a contact number, and recruiters ask for
-            both. <a href="${ctx}/app/profile">Finish your profile</a> before the next drive closes.</div>
-    </div>
+<%-- A short guide for someone new. It disappears once the profile is complete and
+     there is at least one application, so it never nags an established user. --%>
+<c:set var="hasApplied" value="${not empty applications}"/>
+<c:if test="${not profileComplete or not hasApplied}">
+    <c:set var="doneCount" value="${1 + (profileComplete ? 1 : 0) + (hasApplied ? 1 : 0)}"/>
+    <section class="card checklist" aria-labelledby="checklistTitle">
+        <div class="checklist-head">
+            <div>
+                <h2 id="checklistTitle">${doneCount == 1 ? 'Welcome. Here is how to get started' : 'You are getting there'}</h2>
+                <p class="muted mb-0">${doneCount} of 3 steps done</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="checklist-bar" role="progressbar" aria-valuemin="0" aria-valuemax="3"
+                 aria-valuenow="${doneCount}"><span class="w${doneCount}"></span></div>
+        </div>
+        <ol class="checklist-steps">
+            <li class="done">
+                <span class="tick"><svg class="i"><use href="#i-check"/></svg></span>
+                <div><strong>Create your account</strong>
+                    <span>Done. Your academic record decides which drives you see.</span></div>
+            </li>
+            <li class="${profileComplete ? 'done' : 'next'}">
+                <span class="tick"><c:choose>
+                    <c:when test="${profileComplete}"><svg class="i"><use href="#i-check"/></svg></c:when>
+                    <c:otherwise>2</c:otherwise></c:choose></span>
+                <div><strong>Finish your profile</strong>
+                    <span>${profileComplete ? 'Resume and phone number are on file.' : 'Add a phone number and upload your resume. Recruiters ask for both.'}</span></div>
+                <c:if test="${not profileComplete}">
+                    <a class="btn btn-sm btn-primary" href="${ctx}/app/profile">Open profile</a>
+                </c:if>
+            </li>
+            <li class="${hasApplied ? 'done' : (profileComplete ? 'next' : '')}">
+                <span class="tick"><c:choose>
+                    <c:when test="${hasApplied}"><svg class="i"><use href="#i-check"/></svg></c:when>
+                    <c:otherwise>3</c:otherwise></c:choose></span>
+                <div><strong>Apply to your first drive</strong>
+                    <span><c:choose>
+                        <c:when test="${hasApplied}">You have applied. Follow it under Applications.</c:when>
+                        <c:when test="${eligibleOpen.size() == 0}">No open drive matches your record right now.</c:when>
+                        <c:otherwise>${eligibleOpen.size()} open drive(s) match your record.</c:otherwise>
+                    </c:choose></span></div>
+                <c:if test="${not hasApplied}">
+                    <a class="btn btn-sm ${profileComplete ? 'btn-primary' : ''}" href="${ctx}/app/drives">Browse drives</a>
+                </c:if>
+            </li>
+        </ol>
+    </section>
 </c:if>
 
 <div class="metrics">
