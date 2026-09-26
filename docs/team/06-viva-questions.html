@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viva Questions</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Everyone</span>
+<h1>Viva questions and answers</h1>
+<p class="sub">Every question we expect, who answers it, and a short correct answer. The owner's own brief has more detail.</p>
+
+<div class="card">
+  <h3>How to answer</h3>
+  <p>Answer in two or three sentences, then offer to show it: "I can open that file." Say what the code does, not what
+  you wish it did. If a question is outside your layer, say "that is Chandra's part" and hand it over. If you do not know,
+  say so and say where in the code you would look.</p>
+</div>
+
+<h2>A. Questions that cross layers</h2>
+
+<div class="qa"><p class="q">What happens, step by step, when a student presses Apply?<span class="owner">Karan starts, then Tiya, Chandra, Yuvraj</span></p>
+<p class="a">1. The browser sends a POST to <code>/app/apply</code> with a hidden CSRF token. 2. <code>AuthFilter</code> checks there is a signed in session (and the officer role for <code>/admin/*</code>), and on a POST that the CSRF token matches. 3. <code>ApplicationServlet.doPost</code> loads the student and the drive and asks <code>DriveService.check</code> for the verdict. 4. If already applied or not eligible, it flashes a message and redirects. 5. Otherwise it calls <code>ApplicationService.apply</code>, a stateless EJB, inside a container managed transaction: it persists a <code>JobApplication</code> and queues a notification message. 6. Hibernate writes the row to MySQL, and the unique constraint on student and drive is the last guard. 7. The servlet redirects to <code>/app/applications</code>, which forwards to a JSP that lists the rows. 8. Meanwhile the message driven bean logs "Notification delivered".</p></div>
+
+<div class="qa"><p class="q">Why do you redirect after a POST instead of showing the page directly?<span class="owner">Karan, Tiya</span></p>
+<p class="a">Post, Redirect, Get. If the browser were left on the POST result, pressing refresh would submit the form again and apply twice. A redirect makes the browser load a fresh GET, so refresh is harmless. The flash message survives the redirect because it is stored in the session and removed after it is shown once.</p></div>
+
+<div class="qa"><p class="q">Why do you check eligibility both on the page and in the servlet?<span class="owner">Karan, Chandra</span></p>
+<p class="a">The page only hides the button. A page can be stale, a form can be replayed, and a request can be written by hand, so the rule check that matters is the one on the write path. The database adds a third guard, a unique constraint on student and drive.</p></div>
+
+<div class="qa"><p class="q">You use both Hibernate and JDBC. Why?<span class="owner">Yuvraj, Chandra</span></p>
+<p class="a">Ordinary reads and writes are object shaped, so JPA with Hibernate is the right tool: one object, one row. Reports are the opposite: they aggregate across tables, and plain SQL says that more directly than mapped objects. Both use the same server managed connection pool by the same JNDI name, so there is one pool and one database.</p></div>
+
+<div class="qa"><p class="q">Where is the database password kept?<span class="owner">Yuvraj</span></p>
+<p class="a">In <code>WEB-INF/glassfish-resources.xml</code>, which defines the connection pool and the datasource <code>java:app/jdbc/placementDS</code>. The application code asks for that name and never sees a URL or a password. The only exception is <code>MockScoreBean.addScore</code>, the classroom style bean, which has them written in the code on purpose, to show the difference.</p></div>
+
+<div class="qa"><p class="q">How do the JSP pages get their data?<span class="owner">Kinjal, Karan</span></p>
+<p class="a">The servlet puts the data on the request as attributes, then forwards with <code>RequestDispatcher</code> to a JSP under <code>WEB-INF/views</code>. The JSP reads the attributes with EL and loops with JSTL. There is no Java in the page, because scriptlets are switched off in <code>web.xml</code>. A browser cannot ask for a JSP directly because files under <code>WEB-INF</code> are never served.</p></div>
+
+<div class="qa"><p class="q">How is this different from the practical where we used a Stateful bean with DriverManager?<span class="owner">Yuvraj</span></p>
+<p class="a">The practical opened a connection with <code>DriverManager</code> with the URL and password in the code, joined the values into the SQL text, and never closed the connection. We keep that as <code>MockScoreBean.addScore</code> and run it live on the Classroom JDBC page. Beside it, <code>addScoreSafely</code> takes a connection from the pool, binds values with placeholders and closes everything. Both write to MySQL.</p></div>
+
+<div class="qa"><p class="q">Which parts of the course syllabus did you use?<span class="owner">Karan</span></p>
+<p class="a">Servlets with lifecycle and annotations, RequestDispatcher, cookies, HttpSession and a listener, file upload and download, non blocking I/O, JSP with actions, EL and JSTL, EJB of every kind (stateless, stateful, singleton, message driven, interceptor), JNDI, JPA with Hibernate, and JDBC. The table in <code>00-start-here</code> shows where each one is.</p></div>
+
+<div class="qa"><p class="q">What would you do next if you had more time?<span class="owner">Karan</span></p>
+<p class="a">A recruiter role with its own login and an approval step by the officer, real email delivery for notifications, password reset and email confirmation links, and paging on the long lists.</p></div>
+
+<div class="qa"><p class="q">How did you test it?<span class="owner">Chandra</span></p>
+<p class="a">146 automated JUnit tests covering the eligibility rules, validation, password hashing, email domain checks, uploads, and live database tests for the JDBC layer. They run with <code>.\test.ps1</code> and finish in a few seconds. The pages were also walked through in a browser.</p></div>
+
+<!-- LAYERS-START -->
+<h2>B. Yuvraj: MySQL and JDBC</h2>
+
+<p class="note">13 questions. The full brief is <code>02-yuvraj-mysql-jdbc</code>.</p>
+
+<div class="qa">
+  <p class="q">What happens if the password in the pool is wrong?</p>
+  <p class="a">MySQL refuses the login with "Access denied for user placement_user". The password lives in one place, <code>glassfish-resources.xml</code> (line 52). The pool is set with <code>ping="true"</code>, so GlassFish tests it and reports the failure. In the app, <code>describeConnection()</code> catches the <code>SQLException</code> (lines 115 to 119) and the Reports card shows "Unavailable" with MySQL's message instead of crashing. Pages that go through Hibernate will also fail. Fix the password in the XML and redeploy with <code>.\run.ps1</code>. No Java file changes.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What is a connection pool?</p>
+  <p class="a">A set of already open, already authenticated MySQL connections kept by the server. Code borrows one with <code>getConnection()</code> and gives it back with <code>close()</code>. Ours (lines 41 to 47): 4 connections opened to start, at most 24, idle ones dropped after 300 seconds, and each is validated before it is handed out.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why not open a connection per request?</p>
+  <p class="a">Opening a TCP connection and logging in to MySQL costs far more than the query itself, and MySQL allows only a limited number of connections. A pool pays that cost once and reuses. That is exactly what <code>MockScoreBean.addScore</code> does wrong: it opens a new connection on every call and never closes it.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Is this safe from SQL injection? Show me.</p>
+  <p class="a">Yes for values. Show <code>searchCandidates</code> lines 271 to 299: the SQL only ever gets <code>?</code> added, and values are bound with <code>setObject</code>. Then run the mysql <code>PREPARE</code> demo: concatenated returns 26 rows, bound returns 0. Two honest limits. A table name cannot be a <code>?</code>, so <code>requireKnownTable</code> (explorer, line 347) accepts only names the database itself reported, and <code>countRows</code> (report DAO, 426 to 437) uses a fixed list. And the classroom method is unsafe on purpose, which is why the servlet validates first.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What goes wrong with the classroom version?</p>
+  <p class="a">Four things, all visible in <code>addScore</code>. It opens a new connection on every call and never closes it, so connections leak. The URL and password are in the source. The SQL is built by joining strings, so a name like <code>O'Brien</code> ends the string early and the statement is rejected, which is SQL injection in its everyday form. And errors are only printed: the practical hides the failure completely, ours returns 0 so the page shows an error, but the exception itself still only goes to the server log. The pooled method saves the same name because the value is bound, not joined.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What is the difference between Statement and PreparedStatement?</p>
+  <p class="a">A Statement sends the finished SQL text. A PreparedStatement sends the SQL with <code>?</code> placeholders, and the values travel separately, typed, so they can never be read as SQL. It also lets the database reuse the parsed statement. We still use a plain Statement in a few places where no user value is joined in: row counts over a fixed or database-reported table list, and the console, which runs officer typed reads behind the guard.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What if you forget to close the connection?</p>
+  <p class="a">With a pool, <code>close()</code> does not close the socket, it returns the connection. Forget it and the connection is never returned. After 24 leaks the pool is empty and every request waits. That is why every connection here is in a try with resources block, and why <code>closeDriveAndRejectPending</code> closes in a <code>finally</code>.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why JDBC for reports if you already have Hibernate?</p>
+  <p class="a">Hibernate is right for loading an object, changing a field and saving it. Reports aggregate across tables and return numbers, never written back. Plain SQL with <code>COUNT</code>, <code>GROUP BY</code> and a LEFT JOIN is clearer than forcing it into JPQL. Both use the same datasource, so it is one pool, one set of credentials.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Explain the transaction in closeDriveAndRejectPending.</p>
+  <p class="a">Two updates must succeed together: set the drive to CLOSED, and set its APPLIED applications to REJECTED. <code>setAutoCommit(false)</code>, run both, <code>commit()</code>. On any <code>SQLException</code>, <code>rollback()</code> undoes both. The finally block restores auto commit, then closes. The bean is <code>NOT_SUPPORTED</code> so the container does not start its own JTA transaction, which would conflict with one driven by hand.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Can someone destroy data through the SQL console?</p>
+  <p class="a">Three layers. One: the guard (must start with select, with, show, describe or explain, one statement, no forbidden keyword such as drop, update or into). Two: <code>setReadOnly(true)</code> on the connection, so the server refuses writes even if the guard were fooled. Three: the database user only has rights on <code>placement_cell</code>. Be honest about layer three: that user does have all privileges on this schema, so layers one and two are what stop writes here. Rows are capped at 200 and a query is cancelled after 5 seconds.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why is the MySQL driver not inside the WAR? Do you still need Class.forName?</p>
+  <p class="a">The pool is created by GlassFish before the application loads, so the driver must be on the server's classpath: <code>run.ps1</code> copies it into <code>domain1\lib</code>. And <code>Class.forName</code> is not needed with a modern JDBC 4 driver, which registers itself. It appears in <code>MockScoreBean.addScore</code> only because the practical uses it.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Where is DatabaseMetaData used?</p>
+  <p class="a">Two places. <code>describeConnection()</code> (report DAO, 100 to 121) fills the "live connection" card: product name and version, driver, URL, user, isolation. <code>describe()</code> (explorer DAO, 99 to 170) reads columns, primary keys, foreign keys and indexes for the Structure tab. <code>tableNames()</code> uses <code>getTables</code> as the whitelist.</p>
+</div>
+
+<div class="qa">
+  <p class="q">The password is in plain text in an XML file. Is that acceptable?</p>
+  <p class="a">It is a local database made for this project and the user only has rights on one schema. It is listed as an accepted risk in <code>docs/SECURITY.md</code> (item A1). The production step would be a GlassFish password alias or a secret from the environment. The point of the design is that it is in one server file, not compiled into classes.</p>
+</div>
+
+<h2>C. Tiya: Accounts and security</h2>
+
+<p class="note">13 questions. The full brief is <code>03-tiya-auth-security</code>.</p>
+
+<div class="qa">
+  <p class="q">How is an account created?</p>
+  <p class="a">Student self sign up only, at <code>/register</code>. <code>RegisterServlet</code> checks the CSRF token, name, email (four checks), password strength, roll number, branch, batch year, CGPA, backlogs and phone. Only if there are no errors does it call <code>AuthService.registerStudent</code>, which checks for a duplicate email or roll number again, hashes the password, and saves an <code>app_user</code> row plus a student profile. The role is hard coded to STUDENT. Officers exist only through the seeder, never through sign up.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Would it accept a fake email?</p>
+  <p class="a">It rejects an address whose domain does not exist: <code>test@thisdomaindoesnotexist123.com</code> gets "That domain doesn't appear to accept email". It rejects a malformed one such as <code>admin@campus</code>, and 43 known disposable providers such as mailinator. It would still accept an invented mailbox at a real domain, for example <code>asdf1234@gmail.com</code>, because we do not check the mailbox.</p>
+</div>
+
+<div class="qa">
+  <p class="q">So do you verify the email really exists?</p>
+  <p class="a"><b>Done:</b> shape check (<code>Validators.isEmail</code>), disposable blocklist, and a DNS lookup for an MX record with A and AAAA as fallback (<code>EmailDomainVerifier</code>). That proves the domain can receive mail. <b>Not done:</b> no confirmation link, no OTP, no test send, and nothing proves the person owns the mailbox. That needs an SMTP account we do not have. It is the recorded next step (Security review S10). If DNS cannot be reached at all, the check lets the sign up through and logs a warning, on purpose.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Does it hide the password?</p>
+  <p class="a">Yes on screen: the inputs are <code>type="password"</code> on both forms. The forms use POST, so the password is in the body, not the URL. When a form fails, the servlet forwards the page back with no password value, so the boxes come back empty. The audit trail records the call as <code>authenticate(email, [redacted])</code>. Honest limit: the app runs on plain HTTP on localhost, so on a real network it would need HTTPS.</p>
+</div>
+
+<div class="qa">
+  <p class="q">How is the password stored? Can you see it?</p>
+  <p class="a">As <code>pbkdf2$120000$salt$hash</code> in <code>app_user.password_hash</code>: PBKDF2 with HMAC SHA 256, 120,000 rounds, a 16 byte random salt per account, 256 bit output (<code>PasswordHasher</code>). It is one way, so we cannot read the original. Login hashes the typed password with the stored salt and compares in constant time. The salt means two people with the same password get different hashes.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What happens after wrong passwords?</p>
+  <p class="a">Each wrong password adds one to <code>failed_attempts</code> in the database (<code>AuthService</code> lines 74 to 85). The message is "Email or password is incorrect." with HTTP 401. With two or one attempts left it adds a countdown. The fifth sets <code>locked_until</code> fifteen minutes ahead. While locked, even the correct password is refused. A correct sign in resets the counter. The officer can clear a lockout early on the student's page. The lock lives in the database, so restarting the server does not clear it, and it counts per account, not per computer.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Can someone tell which emails have accounts?</p>
+  <p class="a">Not from the wrong password message: unknown email and wrong password read the same, and an unknown email still burns one hash so the timing matches. Two small leaks exist and you should say so: the countdown and lockout messages only appear for real accounts, and the register page says "An account already exists for that address".</p>
+</div>
+
+<div class="qa">
+  <p class="q">Can a student open the admin pages?</p>
+  <p class="a">No. <code>AuthFilter</code> line 63 checks the role for every path under <code>/admin</code>, and a student gets HTTP 403 with the "Not allowed" page. Someone not signed in is redirected to login. The path it tests is cleaned first by <code>RequestPaths.canonical</code>, so <code>//admin/database</code> and <code>/admin;x=1/students</code> are refused too. We tested all of these as a student. This was a real bug in an earlier version: the check read the raw URL, the container routed on the cleaned one, and a doubled slash got through. It is fixed and covered by <code>RequestPathsTest</code>.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What is session fixation and how do you stop it?</p>
+  <p class="a">An attacker plants a known session id in the victim's browser, waits for the victim to sign in, then uses the same id. We call <code>request.changeSessionId()</code> right after a successful password check (<code>LoginServlet</code> line 98), so the pre login id becomes useless. Only cookies are allowed for the id (<code>web.xml</code> line 30), so it cannot sit in a URL.</p>
+</div>
+
+<div class="qa">
+  <p class="q">How long does a session last, and who counts them?</p>
+  <p class="a">30 minutes of inactivity: <code>web.xml</code> line 23, and <code>SessionTracker</code> line 24 sets the same 30 minutes when each session is created. Logout invalidates it at once. <code>SessionTracker</code> implements <code>HttpSessionListener</code>; the container calls it on creation and on invalidation or timeout, and the officer's System page shows "Sessions open now".</p>
+</div>
+
+<div class="qa">
+  <p class="q">Which cookies do you set, and with what flags?</p>
+  <p class="a"><code>JSESSIONID</code>: HttpOnly (in <code>web.xml</code>). <code>remember_email</code> (only if the box is ticked) and <code>last_visit</code>: HttpOnly, 30 days, path <code>/placement</code>, values percent encoded. <code>portal_theme</code>: one year, not HttpOnly, only says light or dark. No cookie holds a password. Not set: the <code>Secure</code> flag, because a secure cookie would never be sent over plain HTTP on localhost (accepted risk A2 in the review), and no SameSite attribute is set in our code.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why are the JSPs under WEB-INF? Forward or redirect?</p>
+  <p class="a">Anything under <code>WEB-INF</code> cannot be requested by URL: we tested <code>/placement/WEB-INF/views/login.jsp</code> and got 404. Only a servlet can reach a view, by <code>RequestDispatcher.forward</code>, which happens inside the server: the address bar keeps the servlet URL. A redirect sends the browser a 302 and it makes a second request. We forward to show a page, including a failed login, and redirect after every successful POST (Post-Redirect-Get) so refresh cannot repeat the action.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What are CSRF and the Content Security Policy?</p>
+  <p class="a"><b>CSRF:</b> another site making your browser submit a form to us. Every POST needs the random per session token in a hidden field (<code>Web.csrfValid</code>). <b>CSP:</b> <code>script-src 'self'</code> with no inline scripts, so the browser refuses any script we did not serve. Plus <code>frame-ancestors 'none'</code> and <code>X-Frame-Options: DENY</code> against clickjacking, <code>form-action 'self'</code>, <code>nosniff</code>, and no-store on every page that is not a static asset. Not set: HSTS, because we have no HTTPS.</p>
+</div>
+
+<h2>D. Kinjal: Views, validation and uploads</h2>
+
+<p class="note">14 questions. The full brief is <code>04-kinjal-views-validation</code>.</p>
+
+<div class="qa"><p class="q">Why can't I open your JSPs directly?</p>
+<p class="a">They live under <code>WEB-INF/views</code>, and the container never serves anything under WEB-INF to a browser. The only way in is <code>RequestDispatcher.forward</code> from a servlet, which is what <code>Web.render</code> does. Try it: <code>/placement/WEB-INF/views/drives.jsp</code> gives a 404. The one exception is <code>index.jsp</code>, the welcome file, and it holds no markup.</p></div>
+
+<div class="qa"><p class="q">Why are scriptlets disabled, and where?</p>
+<p class="a">In <code>web.xml</code>, <code>&lt;scripting-invalid&gt;true&lt;/scripting-invalid&gt;</code> for <code>*.jsp</code> and <code>*.jspf</code>. Java inside a page mixes logic into the view, cannot be tested, and is where injection bugs hide. With it off, a page containing a scriptlet fails to compile, so the rule cannot be broken by accident.</p></div>
+
+<div class="qa"><p class="q">Include directive or <code>jsp:include</code>? Which do you use?</p>
+<p class="a">The include directive, <code>&lt;%@ include file="layout-top.jspf" %&gt;</code>. It is a static include: the fragment is pasted in when the page is translated, so the whole page becomes one servlet and variables like <code>ctx</code> and <code>me</code> set in the fragment are visible to the page. <code>jsp:include</code> would run at request time as a separate resource. We do not use it.</p></div>
+
+<div class="qa"><p class="q">What does <code>c:out</code> do, and why is it on every user value?</p>
+<p class="a">It escapes <code>&amp; &lt; &gt; " '</code> before printing. Without it, a name like <code>"&gt;&lt;script&gt;alert(1)&lt;/script&gt;</code> would be written into the page as live markup. With it, the register page sends back <code>&amp;#034;&amp;gt;&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;</code>, which the browser shows as plain text. Plain EL like <code>${x}</code> does not escape. I checked this against the running register page.</p>
+<p class="a">It is used inside attributes too, not only in page text. The <code>data-confirm</code> messages that contain a name (<code>admin-companies.jsp</code> line 52, <code>admin-student-detail.jsp</code> lines 101 and 129, <code>my-applications.jsp</code> line 52) use <code>&lt;c:out value='${co.name}'/&gt;</code> inside the attribute. Plain EL remains only for numbers and server made values such as ids, the csrf token and status labels. One client supplied exception: the theme cookie value on the html tag, which only the person's own browser can set.</p></div>
+
+<div class="qa"><p class="q">How does a servlet hand data to a JSP?</p>
+<p class="a">It calls <code>request.setAttribute("drives", drives)</code> and then forwards. The JSP reads <code>${drives}</code>. EL searches page, request, session, then application scope for the name. The address bar keeps the servlet URL because a forward happens inside the server.</p></div>
+
+<div class="qa"><p class="q">Forward or redirect, and when?</p>
+<p class="a">Forward to show a page: same request, attributes survive, no second round trip. Redirect after a successful POST so a refresh does not repeat the write. A message that must survive the redirect goes in the session as <code>flashSuccess</code> or <code>flashError</code>, and <code>layout-top.jspf</code> removes it with <code>c:remove</code> after printing.</p></div>
+
+<div class="qa"><p class="q">Is validation done in the browser or on the server?</p>
+<p class="a">Both, but only the server counts. Inputs carry <code>required</code>, <code>min</code>, <code>max</code>, <code>maxlength</code>, <code>type="email"</code>, and the forms also carry <code>novalidate</code>, so the browser does not block a submit or show its own bubbles. <code>Validators</code> does the real check and the page shows the message under the field with <code>aria-invalid="true"</code>. The register page says it plainly: "Every field is checked again on the server before anything is saved." Anyone can bypass a browser with curl.</p></div>
+
+<div class="qa"><p class="q">Why is there no inline JavaScript?</p>
+<p class="a">The Content-Security-Policy header says <code>script-src 'self'</code> with no <code>'unsafe-inline'</code>, so the browser runs only scripts served from our own origin. An injected script tag would sit there unused. That only works if no page has a script block or an onclick, so everything is in <code>app.js</code>. Confirm dialogs use a <code>data-confirm</code> attribute and one listener. Inline <em>styles</em> are allowed by the policy and a few pages use them.</p></div>
+
+<div class="qa"><p class="q">How does light and dark mode work?</p>
+<p class="a">Clicking the icon calls <code>/theme?mode=dark</code>. <code>ThemeServlet</code> stores <code>portal_theme</code> in a one year cookie, accepting only <code>light</code> or <code>dark</code>. Each page reads it with <code>cookie.portal_theme.value</code> and puts it on the html tag as <code>data-theme</code>. <code>app.css</code> line 102 swaps the colour tokens under <code>[data-theme="dark"]</code>. It does not follow the operating system setting.</p></div>
+
+<div class="qa"><p class="q">How is the resume upload kept safe?</p>
+<p class="a">Four checks and one placement rule (plus a friendly message for an oversize file). <code>@MultipartConfig</code> caps a file at 2 MB and a request at 3 MB. The extension must be pdf, doc or docx. The first bytes must match that format (<code>%PDF</code>, or the zip or OLE signature). An oversize file is caught and answered with a normal message (<code>ProfileServlet</code> lines 73 to 82, <code>AuthFilter</code> lines 70 to 80). The saved name is generated (<code>resume-1-a1b2c3d4.pdf</code>), so the browser's file name is never used as a path. The file goes to <code>domain1/placement-resumes</code>, outside the deployed app, so a redeploy does not wipe it.</p></div>
+
+<div class="qa"><p class="q">How is a resume served back, and can a student read someone else's?</p>
+<p class="a">Through <code>/app/resume</code>, not a static link. The servlet finds the file name from the student record, resolves it inside the upload folder only, and sends it with <code>Content-Disposition: attachment</code> and <code>nosniff</code>. A student asking for another student's id gets 403. The officer may fetch any.</p></div>
+
+<div class="qa"><p class="q">Explain the non blocking bulk import in plain words.</p>
+<p class="a">Normally <code>read()</code> makes a server thread wait for the next byte, so a slow upload ties up a thread doing nothing. In <code>BulkImportServlet</code> the request is put in async mode (line 67) and a <code>ReadListener</code> is attached (line 73). The container calls <code>onDataAvailable</code> only when bytes are ready, we read while <code>isReady()</code> is true, then the thread goes back to the pool. When the body ends, <code>onAllDataRead</code> validates the rows, writes JSON and calls <code>async.complete()</code>. Limits: 512 KB and a 30 second timeout. The non blocking part is reading the request. The database work for each row still runs on that callback thread.</p></div>
+
+<div class="qa"><p class="q">Is the import a file upload?</p>
+<p class="a">No. The officer pastes text into a box and <code>app.js</code> sends it with <code>fetch</code> as <code>text/csv</code>. It is not multipart, which is why it is a different mechanism from the resume upload. The CSRF token goes in the query string because there is no form body to carry it. The script writes the JSON reply into the page with <code>textContent</code>, never <code>innerHTML</code>.</p></div>
+
+<div class="qa"><p class="q">What accessibility work did you do?</p>
+<p class="a">What is in the markup: <code>lang="en"</code> on every page; a <code>label for</code> on form fields; <code>aria-invalid</code> set by the server with visible error text, so colour is not the only signal; <code>aria-hidden</code> on the logo and icon sprite; <code>aria-label="Menu"</code> on the menu toggle; a visible <code>:focus-visible</code> outline, including on the CSS only menus; transitions only when the user has not asked for reduced motion; and a written contrast audit in the comments of <code>app.css</code>. Not done: no skip link, and the theme and sign out icons have <code>title</code> text but no <code>aria-label</code>.</p></div>
+
+<h2>E. Chandra: Entities and EJB</h2>
+
+<p class="note">10 questions. The full brief is <code>05-chandra-entities-ejb</code>.</p>
+
+<div class="qa"><p class="q">Stateless versus stateful session bean?</p>
+<p class="a">Stateless keeps nothing between calls, so any pooled instance serves any caller (the three services). Stateful is one instance per client that remembers its fields (<code>ShortlistBean</code>).</p></div>
+
+<div class="qa"><p class="q">Why is the shortlist bean stateful, and where is it held?</p>
+<p class="a">The officer ticks names across page loads, so the selection belongs to one person. The instance lives in the EJB container (30 minute timeout), the reference in that officer's HttpSession. A servlet field would be shared by all officers.</p></div>
+
+<div class="qa"><p class="q">Singleton bean and @Startup? Interceptor?</p>
+<p class="a">A singleton is one instance for the whole app; <code>@Startup</code> creates it at deploy. An interceptor's <code>@AroundInvoke</code> method wraps a business method and calls <code>ctx.proceed()</code>, so the beans hold no audit code.</p></div>
+
+<div class="qa"><p class="q">What is JNDI, and how does @EJB differ from a lookup?</p>
+<p class="a">JNDI is the container's name service: look up a name, get a resource, no URL or password in code. <code>@EJB</code> looks up once at creation; an explicit lookup gives a new stateful instance each time.</p></div>
+
+<div class="qa"><p class="q">What does @PersistenceContext do?</p>
+<p class="a">It injects a container managed, transaction scoped <code>EntityManager</code> for <code>placementPU</code>. You never open or commit it.</p></div>
+
+<div class="qa"><p class="q">Why Hibernate? JPA versus Hibernate?</p>
+<p class="a">JPA is the specification, Hibernate the implementation, named in <code>persistence.xml</code>. It writes the SQL, so only the dialect changes for another database.</p></div>
+
+<div class="qa"><p class="q">Which side owns the foreign key, and how is a double application stopped?</p>
+<p class="a">The side with <code>@JoinColumn</code>, for example <code>JobApplication.student</code>. <code>hasApplied</code> checks first, and the unique key <code>uk_student_drive</code> refuses a second row even if the check is bypassed.</p></div>
+
+<div class="qa"><p class="q">LAZY versus EAGER, and what is a detached entity?</p>
+<p class="a">EAGER loads the related row with the entity, LAZY waits until touched. A detached entity has lost its transaction, as in a servlet; a lazy list on it throws <code>LazyInitializationException</code>. <code>merge</code> reattaches it.</p></div>
+
+<div class="qa"><p class="q">What happens when an exception is thrown inside a transaction?</p>
+<p class="a">A runtime exception is a system exception: the container rolls the transaction back and the caller gets it wrapped in <code>EJBException</code>, so the servlet reads <code>getCause()</code>, as <code>withdraw</code> does. The audit row survives (<code>REQUIRES_NEW</code>). Reads use <code>SUPPORTS</code>, writes <code>REQUIRED</code>.</p></div>
+
+<div class="qa"><p class="q">How does the MDB work, and can a placed student apply again?</p>
+<p class="a"><code>NotificationSender.send</code> queues a text message; the container calls <code>NotificationMDB.onMessage</code>, which logs it and saves a NOTIFICATION row. A placed student can apply again: no rule forbids it.</p></div>
+<!-- LAYERS-END -->
+
+</main>
+</body>
+</html>

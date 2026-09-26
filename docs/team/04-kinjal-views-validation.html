@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinjal: Views and Validation</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Kinjal</span>
+<h1>Kinjal: Views and Validation</h1>
+<p class="sub">Campus Placement and Training Cell. Everything a person sees, types or uploads. Every line number below was checked against the current source.</p>
+
+<h2>1. Your role in one sentence</h2>
+<p>You own the last step of every request: the JSP pages that turn data into HTML, the rules that decide whether typed input is acceptable, and the two ways a file gets in (the resume upload and the bulk import).</p>
+
+<h2>2. What you own</h2>
+<table>
+<tr><th>File</th><th>Lines</th><th>What it is</th></tr>
+<tr><td><code>layout-top.jspf</code></td><td>146</td><td>Shared page opening: theme cookie, header, navigation, flash messages.</td></tr>
+<tr><td><code>layout-bottom.jspf</code></td><td>16</td><td>Shared footer, with the one <code>jsp:useBean</code> and one <code>fmt</code> tag.</td></tr>
+<tr><td><code>icons.jspf</code></td><td>48</td><td>Hidden SVG sprite holding every icon.</td></tr>
+<tr><td>Student pages: <code>student-dashboard</code> 191, <code>drives</code> 106, <code>drive-detail</code> 150, <code>my-applications</code> 76, <code>profile</code> 186</td><td>709</td><td>What a student sees. <code>profile.jsp</code> holds the details form, password form and resume upload.</td></tr>
+<tr><td>Officer pages: <code>admin-dashboard</code> 106, <code>admin-students</code> 88, <code>admin-student-detail</code> 140, <code>admin-companies</code> 131, <code>admin-drives</code> 224, <code>admin-applications</code> 107, <code>admin-shortlist</code> 133, <code>admin-audit</code> 70, <code>admin-system</code> 76</td><td>1075</td><td>What the placement officer sees.</td></tr>
+<tr><td><code>admin-import.jsp</code></td><td>81</td><td>The bulk import page (a text box and one button).</td></tr>
+<tr><td><code>error-403</code> 34, <code>error-404</code> 30, <code>error-500</code> 40</td><td>104</td><td>Error pages wired in <code>web.xml</code>.</td></tr>
+<tr><td><code>assets/app.css</code> 510, <code>app2.css</code> 392</td><td>902</td><td>All styling, light and dark palettes as colour tokens.</td></tr>
+<tr><td><code>assets/app.js</code></td><td>136</td><td>The only script in the app: confirm dialogs and the import button.</td></tr>
+<tr><td><code>assets/favicon.svg</code> 11, <code>assets/fonts/</code> (four Plus Jakarta Sans woff2 files)</td><td>11</td><td>Icon and self-hosted fonts, so nothing loads from another site.</td></tr>
+<tr><td><code>util/Validators.java</code></td><td>118</td><td>Server side input rules (email, roll number, phone, name, password, safe number parsing).</td></tr>
+<tr><td><code>util/Branches.java</code></td><td>36</td><td>The fixed list of six branches.</td></tr>
+<tr><td><code>util/UploadStore.java</code></td><td>138</td><td>Where resumes live, safe names, file type checks.</td></tr>
+<tr><td><code>web/ProfileServlet.java</code></td><td>236</td><td>Profile page: details, password change, resume upload.</td></tr>
+<tr><td><code>web/ResumeDownloadServlet.java</code></td><td>80</td><td>Serves a stored resume back, with an owner check.</td></tr>
+<tr><td><code>web/BulkImportServlet.java</code></td><td>218</td><td>Non blocking bulk import of students.</td></tr>
+<tr><td><code>ValidatorsTest</code> 153, <code>BranchesTest</code> 50, <code>UploadStoreTest</code> 93</td><td>296</td><td>JUnit 5 tests for your three util classes.</td></tr>
+</table>
+<p class="note">Not yours: <code>login.jsp</code>, <code>register.jsp</code>, <code>admin-reports.jsp</code>, <code>admin-database.jsp</code>, <code>admin-classroom.jsp</code>. You will still be asked about the register page, so know it. Also note <code>webapp/index.jsp</code> (18 lines): the welcome file, the only JSP outside WEB-INF, no markup in it.</p>
+
+<h2>3. The 60 second explanation</h2>
+<div class="say">
+<p>My part is everything the user touches. Pages are JSP with JSTL and EL only. Scriptlets are switched off in web.xml, so no Java can be written into a page. A servlet puts its data on the request and forwards to a JSP under WEB-INF, which is why no page can be opened by URL. Every page includes the same header and footer with the include directive, and user supplied text is printed with c:out so it is escaped.</p>
+<p>Input is checked twice. The forms carry HTML attributes as hints, but the server decides, using the Validators class, and shows the error next to the field. All JavaScript is in one file, app.js, because our security policy forbids inline scripts. I also own two file paths in: the resume upload, limited by size, extension and the first bytes of the file, stored under a generated name and served back through a servlet; and the bulk import, which reads the request without holding a thread, using a ReadListener.</p>
+</div>
+
+<h2>4. Code walk in VS Code</h2>
+<ol class="steps">
+<li><b><code>WEB-INF/web.xml</code>, lines 50 to 70.</b> Point at the two <code>jsp-property-group</code> blocks and the line <code>&lt;scripting-invalid&gt;true&lt;/scripting-invalid&gt;</code> (lines 58 and 67, for <code>*.jsp</code> and <code>*.jspf</code>). Say: "Scriptlets are refused by the container. A page with Java in it would not even compile, so every page has to use EL and JSTL."</li>
+<li><b><code>web/Web.java</code>, lines 32 and 44 to 49.</b> Point at <code>VIEW_ROOT = "/WEB-INF/views/"</code> and <code>getRequestDispatcher(...).forward(...)</code>. Say: "Every servlet ends with this call. The JSPs sit under WEB-INF, so the container will not serve them directly. Only a forward from inside the server can reach them."</li>
+<li><b><code>DriveBrowseServlet.java</code>, lines 55, 65 and 70, then <code>drives.jsp</code>.</b> Point at <code>request.setAttribute("drives", drives)</code>, then <code>&lt;c:forEach var="d" items="${drives}"&gt;</code> at line 33 of the JSP. Say: "The servlet puts the list on the request. The JSP reads it back by name with EL. That is the whole handover."</li>
+<li><b><code>layout-top.jspf</code>, lines 11 to 13, 25 and 29.</b> Point at the three <code>c:set</code> lines (<code>ctx</code>, <code>me</code>, <code>theme</code>), the <code>cookie.portal_theme</code> expression, and <code>&lt;html lang="en" data-theme="${theme}"&gt;</code>. Say: "The theme comes out of a cookie through the <code>cookie</code> implicit object. The page title is printed with c:out."</li>
+<li><b><code>drives.jsp</code> line 4 and last line, <code>layout-bottom.jspf</code> line 6.</b> Point at <code>&lt;%@ include file="layout-top.jspf" %&gt;</code>, then <code>jsp:useBean</code> and the <code>fmt:formatDate</code> on line 12. Say: "The include directive pastes the fragment in at translation time, so the variables it sets are visible to the page. jsp:useBean is the one standard action we use."</li>
+<li><b><code>layout-top.jspf</code>, lines 133 to 145.</b> Point at the flash message block and <code>&lt;c:remove var="flashSuccess" scope="session"/&gt;</code>. Say: "A message is shown once and removed, so a refresh does not repeat it."</li>
+<li><b><code>drives.jsp</code>, lines 38 to 40 and 73 to 97.</b> Point at <code>&lt;c:out value="${d.company.name}"/&gt;</code> and the <code>c:choose</code> with <code>c:when</code> and <code>c:otherwise</code> for Already applied, Eligible, Not eligible. Say: "Text comes from the database, so it is always escaped. The verdict was decided in the EJB, the page only shows it."</li>
+<li><b><code>profile.jsp</code> lines 19 to 40, <code>ProfileServlet.java</code> lines 91 to 121.</b> Point at <code>novalidate</code>, <code>required</code>, <code>min</code>, <code>max</code>, <code>aria-invalid</code>, the <code>div class="err"</code>; then the <code>errors</code> map in the servlet. Say: "The attributes are hints. The servlet runs Validators, collects messages in a map, and forwards back to the same page, where each message sits under its field."</li>
+<li><b><code>util/Validators.java</code> lines 6 to 10, 20 to 29, 61.</b> Point at the class comment, the <code>EMAIL</code> pattern, and <code>isStrongPassword</code>. Say: "Deliberately stricter than the RFC. <code>admin@campus</code> is refused. The HTML attributes are not a security control, this class is." Then run <code>.\test.ps1</code> if asked: 27 test methods across your three test classes.</li>
+<li><b><code>assets/app.js</code> lines 1 to 31, <code>security/SecurityHeadersFilter.java</code> lines 51 to 61.</b> Point at the header comment and the <code>submit</code> listener that reads <code>data-confirm</code>, then <code>script-src 'self'</code> in the CSP. Say: "The browser runs only scripts served from our own origin. So no page may contain a script block or an onclick. The confirm dialogs use a data attribute and one listener."</li>
+<li><b>Upload path.</b> <code>profile.jsp</code> lines 154 to 165 (<code>enctype="multipart/form-data"</code>, <code>accept</code>), <code>ProfileServlet.java</code> lines 32 to 35 (<code>@MultipartConfig</code>, 2 MB file, 3 MB request), 73 to 82 (an oversize file is caught here) and 159 to 214, <code>UploadStore.java</code> lines 36 to 39 and 92 to 107, and <code>security/AuthFilter.java</code> lines 70 to 80 (the same oversize catch, because the filter reads the token first). Say: "Size first, then extension, then the opening bytes must match the format, then the file is written under a name we generate."</li>
+<li><b><code>ResumeDownloadServlet.java</code> lines 41 to 78.</b> Point at the owner check, <code>UploadStore.resolve</code>, <code>Content-Disposition: attachment</code>, <code>nosniff</code>. Say: "The file is found from the student record, never from a name in the URL. A student gets 403 for anyone else's resume."</li>
+<li><b>Bulk import.</b> <code>BulkImportServlet.java</code> line 40 (<code>asyncSupported = true</code>), line 67 (<code>startAsync</code>), lines 73 to 118 (<code>ReadListener</code>: <code>onDataAvailable</code>, <code>onAllDataRead</code>, <code>onError</code>); <code>admin-import.jsp</code> lines 36 to 39; <code>app.js</code> lines 109 to 135. Say: "The button posts the pasted text with fetch. The servlet reads it in chunks only when the container says bytes are ready."</li>
+<li><b><code>assets/app.css</code> line 102 and <code>web/ThemeServlet.java</code>.</b> Point at <code>[data-theme="dark"]</code> replacing the colour tokens. Say: "Dark mode is a token swap, not a second stylesheet."</li>
+</ol>
+
+<h2>5. Live demo plan</h2>
+<p class="note">Prepare before the demo: one small real PDF (under 2 MB) on the desktop, one text file renamed to <code>fake.pdf</code>, and one file over 2 MB (any large file, for example a video or a big zip). When this was written nobody had a resume on file, so the upload has to come first.</p>
+<ol class="steps">
+<li><b>Direct JSP is refused.</b> Open <code>http://localhost:8080/placement/WEB-INF/views/drives.jsp</code>. You get the "There is nothing at that address" page (a 404, not 403). Say: "The container hides WEB-INF. The only way to that file is a forward."</li>
+<li><b>Sign in as the student.</b> <code>http://localhost:8080/placement/login</code>, <code>aarti.deshpande@campus.edu</code>, <code>Campus@2026</code>. You land on <code>/app/dashboard</code>. Click the moon icon at top right: the address flashes <code>/theme?mode=dark&amp;back=...</code> and returns dark. Click the sun to go back. Say: "A cookie called portal_theme, read with EL, sets data-theme on the html tag."</li>
+<li><b>A JSP showing database data.</b> Click <b>Drives</b> (<code>/placement/app/drives</code>). You see 10 cards, first <b>Saffron Retail Tech</b>. Right click, View page source: one header, escaped text, no script tags except the app.js link. Then say the path: browser, <code>/app/drives</code>, <code>AuthFilter</code>, <code>DriveBrowseServlet.doGet</code>, <code>DriveService.listOpen()</code> (a stateless EJB running the <code>Drive.open</code> named query), <code>request.setAttribute("drives")</code>, <code>Web.render</code>, forward to <code>/WEB-INF/views/drives.jsp</code>, <code>c:forEach</code>, <code>c:out</code>. Optional proof: run <code>select c.name from drive d join company c on c.id=d.company_id where d.status='OPEN' order by d.last_date</code> in MySQL and the order matches.</li>
+<li><b>A validation error.</b> Click <b>Profile</b> (<code>/app/profile</code>). Set CGPA to <code>99</code> and Mobile number to <code>12</code>, click <b>Save details</b>. The page returns with red text under each field: "CGPA must be between 0 and 10." and "Enter a ten digit mobile number." Nothing is saved, and the boxes show the saved values again. Say: "The browser did not stop me, the form has novalidate. The server decided."</li>
+<li><b>Escaping.</b> Open a private window on <code>http://localhost:8080/placement/register</code>. Full name <code>"&gt;&lt;b&gt;hi&lt;/b&gt;</code>, email <code>admin@campus</code>, leave the rest bad, click <b>Create account</b>. The text comes back inside the name box exactly as typed, not as bold. View source shows <code>&amp;#034;&amp;gt;&amp;lt;b&amp;gt;</code>. No account is created. Say: "This is c:out."</li>
+<li><b>Resume upload and download.</b> Back on the student <b>Profile</b>, right hand card. Choose <code>fake.pdf</code>, click <b>Upload</b>: red banner "That file does not look like a .pdf document inside, whatever it is named." Now choose the real PDF, click <b>Upload</b>: green banner "Resume uploaded." and the card says a resume is on file. Click <b>Download the copy on file</b>: the browser saves <code>Resume-CS21001.pdf</code>. Say where it lives: <code>domains/domain1/placement-resumes/resume-1-xxxxxxxx.pdf</code>, outside the deployed app. This changes data: Aarti now has a resume on file.</li>
+<li><b>Oversize file.</b> On the student <b>Profile</b> choose the file over 2 MB and click <b>Upload</b>. You return to the profile with the red banner "That file is larger than the two megabyte limit." Nothing is stored. Say: "The container refuses it, and we turn that into a normal message instead of an error page." For the real upload keep using the small PDF.</li>
+<li><b>Another student's resume is refused.</b> Type <code>http://localhost:8080/placement/app/resume?student=2</code> while signed in as Aarti. You get the 403 page. Student 2 has no resume, so that is the refusal to show. As the officer, <b>Students</b>, Aarti Deshpande, the Resume row shows <b>Download</b> (<code>?student=1</code>) and it works.</li>
+<li><b>Bulk import as officer.</b> Sign out, sign in as <code>tpo@campus.edu</code>, <code>Campus@2026</code>. Open <b>Tools</b>, then <b>Import</b> (<code>/placement/admin/import</code>). Click <b>Import these rows</b> with the pre filled text. Today's result: 1 created (<code>IT22011</code>, Karan Bhatt), 2 refused: row 1 "An account already exists for priya.nair@campus.edu" (she is already seeded) and row 3 "broken-address is not a valid email address". Click <b>Open the student register</b> to show Karan Bhatt. This creates a real account: remove it afterwards from <b>Students</b>, open Karan Bhatt, <b>Remove from the register</b> (that button uses the data-confirm dialog from app.js).</li>
+<li><b>Role guard on a page.</b> Optional, as the student: <code>http://localhost:8080/placement/admin/import</code> shows the 403 page rendered from <code>error-403.jsp</code>.</li>
+</ol>
+<div class="warn">Rehearse the import with the first two rows changed to a new fake name, email and roll number (for example <code>Demo Student,demo.student@campus.edu,CS22099,Computer Science,2027,7.5,0,9820100299</code>) so the real demo still has something to create. A second run of the same rows creates nothing.</div>
+
+<h2>6. Servlet and JSP course topics mapped to this code</h2>
+<table>
+<tr><th>Topic</th><th>Where in the code</th></tr>
+<tr><td>Page directive</td><td>Line 1 of every view: <code>&lt;%@ page contentType="text/html; charset=UTF-8" %&gt;</code>. <code>error-500.jsp</code> adds <code>isErrorPage="true"</code>.</td></tr>
+<tr><td>Taglib directive</td><td><code>&lt;%@ taglib prefix="c" uri="jakarta.tags.core" %&gt;</code> on every page, plus <code>fmt</code> in <code>layout-top.jspf</code>.</td></tr>
+<tr><td>Include directive</td><td>Every page: <code>&lt;%@ include file="layout-top.jspf" %&gt;</code> first, <code>layout-bottom.jspf</code> last. <code>layout-top.jspf</code> includes <code>icons.jspf</code>.</td></tr>
+<tr><td>Standard action</td><td><code>jsp:useBean</code> in <code>layout-bottom.jspf</code> line 6. This is the only one. <code>jsp:include</code> and <code>jsp:forward</code> are not used.</td></tr>
+<tr><td>JSTL core</td><td><code>c:set</code>, <code>c:if</code>, <code>c:choose/when/otherwise</code>, <code>c:forEach</code>, <code>c:out</code>, <code>c:remove</code> in the views; <code>c:redirect</code> in <code>index.jsp</code>.</td></tr>
+<tr><td>JSTL formatting</td><td><code>fmt:formatDate</code> in <code>layout-bottom.jspf</code> line 12 (the render time in the footer).</td></tr>
+<tr><td>EL implicit objects</td><td><code>pageContext</code> (<code>pageContext.request.contextPath</code>, <code>pageContext.exception</code>), <code>sessionScope</code> (<code>sessionScope.user</code>, flash messages), <code>requestScope</code> (the forward path, <code>layout-top.jspf</code> line 23), <code>cookie</code> (<code>cookie.portal_theme</code>). <code>param</code> and <code>header</code> are not used.</td></tr>
+<tr><td>EL operators</td><td><code>empty</code>, <code>not</code>, <code>? :</code>, <code>==</code>, <code>eq</code>, map lookup <code>verdicts[d.id]</code>, method call <code>applications.size()</code>.</td></tr>
+<tr><td>Scopes</td><td>Page: <code>ctx</code>, <code>me</code>, <code>theme</code>. Request: <code>pageTitle</code>, <code>drives</code>, <code>detailErrors</code>. Session: <code>user</code>, <code>flashSuccess</code>, <code>csrfToken</code>.</td></tr>
+<tr><td>Servlet to JSP</td><td><code>request.setAttribute</code> then <code>Web.render</code>, which calls <code>RequestDispatcher.forward</code> (<code>Web.java</code> lines 44 to 49).</td></tr>
+<tr><td>No scriptlets</td><td><code>web.xml</code> <code>scripting-invalid</code>, lines 58 and 67.</td></tr>
+<tr><td>Error pages</td><td><code>web.xml</code> lines 33 to 48: 404, 403, 500 and <code>java.lang.Throwable</code> mapped to the three JSPs.</td></tr>
+<tr><td>Redirect after POST, flash</td><td><code>Web.redirect</code>, <code>Web.flashSuccess</code>; <code>ProfileServlet</code> ends every save with a redirect.</td></tr>
+<tr><td>Cookies</td><td>Written by <code>ThemeServlet</code>, read in <code>layout-top.jspf</code> line 13.</td></tr>
+<tr><td>File upload</td><td><code>@MultipartConfig</code>, <code>Part</code>, <code>getSubmittedFileName</code> in <code>ProfileServlet</code>.</td></tr>
+<tr><td>File download</td><td><code>ResumeDownloadServlet</code>: content type, <code>Content-Disposition</code>, streaming with <code>transferTo</code>.</td></tr>
+<tr><td>Async and non blocking I/O</td><td><code>startAsync</code>, <code>ReadListener</code>, <code>AsyncContext.complete</code> in <code>BulkImportServlet</code>.</td></tr>
+<tr><td>Input validation</td><td><code>Validators</code>, <code>Branches</code>, used by <code>ProfileServlet</code> and <code>BulkImportServlet</code> (and by register).</td></tr>
+</table>
+
+<h2>7. Questions you will be asked</h2>
+
+<div class="qa"><p class="q">Why can't I open your JSPs directly?</p>
+<p class="a">They live under <code>WEB-INF/views</code>, and the container never serves anything under WEB-INF to a browser. The only way in is <code>RequestDispatcher.forward</code> from a servlet, which is what <code>Web.render</code> does. Try it: <code>/placement/WEB-INF/views/drives.jsp</code> gives a 404. The one exception is <code>index.jsp</code>, the welcome file, and it holds no markup.</p></div>
+
+<div class="qa"><p class="q">Why are scriptlets disabled, and where?</p>
+<p class="a">In <code>web.xml</code>, <code>&lt;scripting-invalid&gt;true&lt;/scripting-invalid&gt;</code> for <code>*.jsp</code> and <code>*.jspf</code>. Java inside a page mixes logic into the view, cannot be tested, and is where injection bugs hide. With it off, a page containing a scriptlet fails to compile, so the rule cannot be broken by accident.</p></div>
+
+<div class="qa"><p class="q">Include directive or <code>jsp:include</code>? Which do you use?</p>
+<p class="a">The include directive, <code>&lt;%@ include file="layout-top.jspf" %&gt;</code>. It is a static include: the fragment is pasted in when the page is translated, so the whole page becomes one servlet and variables like <code>ctx</code> and <code>me</code> set in the fragment are visible to the page. <code>jsp:include</code> would run at request time as a separate resource. We do not use it.</p></div>
+
+<div class="qa"><p class="q">What does <code>c:out</code> do, and why is it on every user value?</p>
+<p class="a">It escapes <code>&amp; &lt; &gt; " '</code> before printing. Without it, a name like <code>"&gt;&lt;script&gt;alert(1)&lt;/script&gt;</code> would be written into the page as live markup. With it, the register page sends back <code>&amp;#034;&amp;gt;&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;</code>, which the browser shows as plain text. Plain EL like <code>${x}</code> does not escape. I checked this against the running register page.</p>
+<p class="a">It is used inside attributes too, not only in page text. The <code>data-confirm</code> messages that contain a name (<code>admin-companies.jsp</code> line 52, <code>admin-student-detail.jsp</code> lines 101 and 129, <code>my-applications.jsp</code> line 52) use <code>&lt;c:out value='${co.name}'/&gt;</code> inside the attribute. Plain EL remains only for numbers and server made values such as ids, the csrf token and status labels. One client supplied exception: the theme cookie value on the html tag, which only the person's own browser can set.</p></div>
+
+<div class="qa"><p class="q">How does a servlet hand data to a JSP?</p>
+<p class="a">It calls <code>request.setAttribute("drives", drives)</code> and then forwards. The JSP reads <code>${drives}</code>. EL searches page, request, session, then application scope for the name. The address bar keeps the servlet URL because a forward happens inside the server.</p></div>
+
+<div class="qa"><p class="q">Forward or redirect, and when?</p>
+<p class="a">Forward to show a page: same request, attributes survive, no second round trip. Redirect after a successful POST so a refresh does not repeat the write. A message that must survive the redirect goes in the session as <code>flashSuccess</code> or <code>flashError</code>, and <code>layout-top.jspf</code> removes it with <code>c:remove</code> after printing.</p></div>
+
+<div class="qa"><p class="q">Is validation done in the browser or on the server?</p>
+<p class="a">Both, but only the server counts. Inputs carry <code>required</code>, <code>min</code>, <code>max</code>, <code>maxlength</code>, <code>type="email"</code>, and the forms also carry <code>novalidate</code>, so the browser does not block a submit or show its own bubbles. <code>Validators</code> does the real check and the page shows the message under the field with <code>aria-invalid="true"</code>. The register page says it plainly: "Every field is checked again on the server before anything is saved." Anyone can bypass a browser with curl.</p></div>
+
+<div class="qa"><p class="q">Why is there no inline JavaScript?</p>
+<p class="a">The Content-Security-Policy header says <code>script-src 'self'</code> with no <code>'unsafe-inline'</code>, so the browser runs only scripts served from our own origin. An injected script tag would sit there unused. That only works if no page has a script block or an onclick, so everything is in <code>app.js</code>. Confirm dialogs use a <code>data-confirm</code> attribute and one listener. Inline <em>styles</em> are allowed by the policy and a few pages use them.</p></div>
+
+<div class="qa"><p class="q">How does light and dark mode work?</p>
+<p class="a">Clicking the icon calls <code>/theme?mode=dark</code>. <code>ThemeServlet</code> stores <code>portal_theme</code> in a one year cookie, accepting only <code>light</code> or <code>dark</code>. Each page reads it with <code>cookie.portal_theme.value</code> and puts it on the html tag as <code>data-theme</code>. <code>app.css</code> line 102 swaps the colour tokens under <code>[data-theme="dark"]</code>. It does not follow the operating system setting.</p></div>
+
+<div class="qa"><p class="q">How is the resume upload kept safe?</p>
+<p class="a">Four checks and one placement rule (plus a friendly message for an oversize file). <code>@MultipartConfig</code> caps a file at 2 MB and a request at 3 MB. The extension must be pdf, doc or docx. The first bytes must match that format (<code>%PDF</code>, or the zip or OLE signature). An oversize file is caught and answered with a normal message (<code>ProfileServlet</code> lines 73 to 82, <code>AuthFilter</code> lines 70 to 80). The saved name is generated (<code>resume-1-a1b2c3d4.pdf</code>), so the browser's file name is never used as a path. The file goes to <code>domain1/placement-resumes</code>, outside the deployed app, so a redeploy does not wipe it.</p></div>
+
+<div class="qa"><p class="q">How is a resume served back, and can a student read someone else's?</p>
+<p class="a">Through <code>/app/resume</code>, not a static link. The servlet finds the file name from the student record, resolves it inside the upload folder only, and sends it with <code>Content-Disposition: attachment</code> and <code>nosniff</code>. A student asking for another student's id gets 403. The officer may fetch any.</p></div>
+
+<div class="qa"><p class="q">Explain the non blocking bulk import in plain words.</p>
+<p class="a">Normally <code>read()</code> makes a server thread wait for the next byte, so a slow upload ties up a thread doing nothing. In <code>BulkImportServlet</code> the request is put in async mode (line 67) and a <code>ReadListener</code> is attached (line 73). The container calls <code>onDataAvailable</code> only when bytes are ready, we read while <code>isReady()</code> is true, then the thread goes back to the pool. When the body ends, <code>onAllDataRead</code> validates the rows, writes JSON and calls <code>async.complete()</code>. Limits: 512 KB and a 30 second timeout. The non blocking part is reading the request. The database work for each row still runs on that callback thread.</p></div>
+
+<div class="qa"><p class="q">Is the import a file upload?</p>
+<p class="a">No. The officer pastes text into a box and <code>app.js</code> sends it with <code>fetch</code> as <code>text/csv</code>. It is not multipart, which is why it is a different mechanism from the resume upload. The CSRF token goes in the query string because there is no form body to carry it. The script writes the JSON reply into the page with <code>textContent</code>, never <code>innerHTML</code>.</p></div>
+
+<div class="qa"><p class="q">What accessibility work did you do?</p>
+<p class="a">What is in the markup: <code>lang="en"</code> on every page; a <code>label for</code> on form fields; <code>aria-invalid</code> set by the server with visible error text, so colour is not the only signal; <code>aria-hidden</code> on the logo and icon sprite; <code>aria-label="Menu"</code> on the menu toggle; a visible <code>:focus-visible</code> outline, including on the CSS only menus; transitions only when the user has not asked for reduced motion; and a written contrast audit in the comments of <code>app.css</code>. Not done: no skip link, and the theme and sign out icons have <code>title</code> text but no <code>aria-label</code>.</p></div>
+
+<h2>8. If something goes wrong</h2>
+<table>
+<tr><th>What you see</th><th>Why, and what to do</th></tr>
+<tr><td>Red banner "That file is larger than the two megabyte limit."</td><td>The file is over 2 MB. That is the intended message. Use the small PDF for the real upload.</td></tr>
+<tr><td>Officer opens <code>/app/profile</code> and lands on the dashboard</td><td>Expected. An officer has no profile page, so <code>ProfileServlet</code> redirects to <code>/admin/dashboard</code>. Show the upload as the student.</td></tr>
+<tr><td>Upload refused</td><td>The name must end in .pdf, .doc or .docx and the content must match. A renamed text file is refused on purpose.</td></tr>
+<tr><td>Import says "The import could not be completed"</td><td>Session expired, so the request was bounced to the login page. Sign in again, reopen Import.</td></tr>
+<tr><td>Import creates nothing</td><td>Those emails or roll numbers already exist, for example a second run. Change the email and roll number in the rows.</td></tr>
+<tr><td>Download says no resume</td><td>Nothing has been uploaded for that student yet (nobody has one at present). Upload first.</td></tr>
+<tr><td>Theme does not switch</td><td>Cookies blocked in this browser window. Use a normal window, then hard refresh.</td></tr>
+<tr><td>Page unstyled or icons missing</td><td>Hard refresh (Ctrl+F5). Check <code>/placement/assets/app.css</code> returns 200.</td></tr>
+<tr><td>Every page fails, connection refused</td><td>The server is down. Tell the team member who runs it. Do not start it yourself mid demo.</td></tr>
+</table>
+
+</main>
+</body>
+</html>

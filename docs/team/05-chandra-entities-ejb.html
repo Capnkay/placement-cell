@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chandra: Entities and EJB</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Chandra</span>
+<h1>Chandra: Entities and EJB</h1>
+<p class="sub">Domain model, Hibernate, the session beans, the queue and the audit trail. Campus Placement and Training Cell.</p>
+
+<h2>1. Your role in one sentence</h2>
+<p>You own the domain model and the business logic: the six JPA entities that Hibernate maps onto MySQL, and the EJBs that read and write them, decide who is eligible, queue notifications and record the audit trail.</p>
+
+<h2>2. What you own</h2>
+<table>
+<tr><th>File</th><th>Lines</th><th>What it is</th></tr>
+<tr><td><code>entity/AppUser.java</code></td><td>158</td><td>Account and credentials</td></tr>
+<tr><td><code>entity/StudentProfile.java</code></td><td>155</td><td>Academic record, one to one</td></tr>
+<tr><td><code>entity/Company.java</code></td><td>105</td><td>Recruiter, <code>@OneToMany</code> to drives</td></tr>
+<tr><td><code>entity/Drive.java</code></td><td>207</td><td>Drive and its eligibility inputs</td></tr>
+<tr><td><code>entity/JobApplication.java</code></td><td>133</td><td>Student to drive join, unique key</td></tr>
+<tr><td><code>entity/AuditLog.java</code></td><td>102</td><td>One audit row</td></tr>
+<tr><td><code>entity/Role, ApplicationStatus, DriveStatus</code></td><td>20, 28, 22</td><td>The three enums</td></tr>
+<tr><td><code>META-INF/persistence.xml</code></td><td>68</td><td>Persistence unit, Hibernate provider</td></tr>
+<tr><td><code>ejb/ApplicationService.java</code></td><td>171</td><td>Stateless: apply, status, withdraw</td></tr>
+<tr><td><code>ejb/DriveService.java</code></td><td>153</td><td>Stateless: drives, companies, <code>check()</code></td></tr>
+<tr><td><code>ejb/StudentService.java</code></td><td>109</td><td>Stateless: profiles, search</td></tr>
+<tr><td><code>ejb/EligibilityRules, Eligibility</code></td><td>69, 46</td><td>The rules, and the verdict object</td></tr>
+<tr><td><code>ejb/ShortlistBean.java</code></td><td>136</td><td>Stateful shortlist basket</td></tr>
+<tr><td><code>ejb/NotificationSender.java</code></td><td>56</td><td>JMS producer, declares the queue</td></tr>
+<tr><td><code>ejb/NotificationMDB.java</code></td><td>58</td><td>Message driven consumer</td></tr>
+<tr><td><code>ejb/PortalStatsBean.java</code></td><td>157</td><td>Singleton: counters, JNDI report</td></tr>
+</table>
+<table>
+<tr><th>File</th><th>Lines</th><th>What it is</th></tr>
+<tr><td><code>ejb/AuditInterceptor.java</code></td><td>161</td><td><code>@AroundInvoke</code> audit interceptor</td></tr>
+<tr><td><code>ejb/AuditWriter, AuditService</code></td><td>30, 42</td><td>Write one row, read the rows</td></tr>
+<tr><td><code>test/ejb/EligibilityRulesTest.java</code></td><td>179</td><td>10 tests, no database</td></tr>
+</table>
+<p class="note">Not yours: <code>AuthService</code> and <code>AuthResult</code> (Tiya), <code>DataSeeder</code> (a teammate), <code>MockScoreBean</code> (Yuvraj, also stateful). <code>EligibilityRules</code> and <code>Eligibility</code> are plain classes, not beans. <code>ShortlistServlet</code> is Karan's but drives your <code>ShortlistBean</code>. Your interceptor also wraps <code>AuthService</code>, which is why sign ins show on the Audit page.</p>
+
+<h2>3. The 60 second explanation</h2>
+<div class="say">
+<p>My part is the model and the business rules. Six JPA entities, mapped by Hibernate onto MySQL. An application row joins a student to a drive, with a unique key on the pair so nobody can apply twice.</p>
+<p>The rules live in EJBs. The three services are stateless and the container wraps each write in a transaction. The shortlist basket is stateful, one per officer. A singleton starts at deploy. When an application changes, a message goes on a JMS queue and a message driven bean records it. An interceptor writes an audit row for every change, with passwords redacted. Eligibility is one plain method that lists every reason a student fails, so I can show it live.</p>
+</div>
+
+<h2>4. An EJB cheat table</h2>
+<table>
+<tr><th>Bean</th><th>Type</th><th>Annotations</th><th>Purpose</th><th>Used by</th></tr>
+<tr><td><code>ApplicationService</code></td><td>Stateless</td><td><code>@Stateless @Interceptors</code></td><td>Apply, status, withdraw</td><td>Student, officer servlets</td></tr>
+<tr><td><code>DriveService</code></td><td>Stateless</td><td>same</td><td>Drives, <code>check()</code></td><td>Drive pages</td></tr>
+<tr><td><code>StudentService</code></td><td>Stateless</td><td>same</td><td>Profiles, search</td><td>Profile pages</td></tr>
+<tr><td><code>NotificationSender</code></td><td>Stateless</td><td><code>@JMSDestinationDefinition</code></td><td>Queue a message</td><td>Services, basket</td></tr>
+</table>
+<table>
+<tr><th>Bean</th><th>Type</th><th>Annotations</th><th>Purpose</th><th>Used by</th></tr>
+<tr><td><code>NotificationMDB</code></td><td>Message driven</td><td><code>@MessageDriven</code></td><td>Consume, save a row</td><td>Container only</td></tr>
+<tr><td><code>ShortlistBean</code></td><td>Stateful</td><td><code>@Stateful @Remove</code></td><td>Officer's basket</td><td><code>ShortlistServlet</code></td></tr>
+<tr><td><code>PortalStatsBean</code></td><td>Singleton</td><td><code>@Singleton @Startup</code></td><td>Counters, JNDI</td><td>Login, apply, System</td></tr>
+</table>
+<table>
+<tr><th>Bean</th><th>Type</th><th>Annotations</th><th>Purpose</th><th>Used by</th></tr>
+<tr><td><code>AuditInterceptor</code></td><td>Interceptor</td><td><code>@AroundInvoke</code></td><td>Audit row per call</td><td>Three services, <code>AuthService</code></td></tr>
+<tr><td><code>AuditWriter</code></td><td>Stateless</td><td><code>REQUIRES_NEW</code></td><td>Save audit row</td><td>The interceptor</td></tr>
+<tr><td><code>AuditService</code></td><td>Stateless</td><td><code>SUPPORTS</code></td><td>Read audit rows</td><td>Audit page</td></tr>
+</table>
+
+<h3>Transactions and rollback</h3>
+<ul>
+<li><b><code>SUPPORTS</code></b>: every read in the three services and all of <code>AuditService</code>. Join a transaction if there is one, never start one.</li>
+<li><b><code>REQUIRED</code></b> (default, no annotation): every write (<code>apply</code>, <code>updateStatus</code>, <code>withdraw</code>, <code>save</code>, <code>delete</code>, <code>ShortlistBean.commit</code>) and the MDB. Written out on <code>NotificationSender.send</code>.</li>
+<li><b><code>REQUIRES_NEW</code></b>: <code>AuditWriter.write</code>, so the audit row commits even if the caller rolls back. MANDATORY and NEVER are not used, and there is no <code>UserTransaction</code> anywhere.</li>
+</ul>
+<p><b>What a rollback means.</b> The container starts the transaction before a business method and commits when it returns. A runtime exception is a system exception: the transaction rolls back, so the INSERT or UPDATE from that call never happens, and the caller receives the original wrapped in <code>EJBException</code>. That is why <code>ApplicationServlet.withdraw</code> catches <code>EJBException</code> and reads <code>getCause()</code>. <code>ShortlistBean.commit()</code> therefore moves every ticked candidate or none. JMS errors are swallowed on purpose, so a broken queue never undoes an edit.</p>
+
+<h3>JNDI, and @EJB compared with a lookup</h3>
+<ul>
+<li><code>java:app/jdbc/placementDS</code>: the pooled datasource, named in <code>persistence.xml</code>; <code>PortalStatsBean</code> gets it by <code>@Resource</code> and by <code>InitialContext.lookup</code>.</li>
+<li><code>java:module/ShortlistBean</code>: <code>new InitialContext().lookup(...)</code>, <code>ShortlistServlet</code> line 135. The queue and its factory are <code>java:app/jms/...</code> names, created by annotations on <code>NotificationSender</code>.</li>
+<li><b>@EJB</b> fills a field once when the object is created, right for stateless beans. A <b>lookup</b> asks when you need it and gives a new stateful instance each time, so <code>ShortlistBean</code> is looked up and kept in the HttpSession.</li>
+</ul>
+
+<h3>JPA mapping</h3>
+<ul>
+<li><b>Foreign keys.</b> The owning side has <code>@JoinColumn</code> and its table holds the key; the other side says <code>mappedBy</code>. <code>@OneToOne</code> <code>StudentProfile.user</code> owns <code>user_id</code> (unique). <code>@ManyToOne</code> <code>Drive.company</code> owns <code>company_id</code>, inverse <code>Company.drives</code> (<code>@OneToMany</code>). <code>@ManyToOne</code> <code>JobApplication.student</code> and <code>.drive</code> own <code>student_id</code> and <code>drive_id</code>. All four exist in MySQL.</li>
+<li><b>No double application.</b> <code>JobApplication.java</code> line 26: <code>@UniqueConstraint(name = "uk_student_drive", columnNames = {"student_id", "drive_id"})</code>. <code>hasApplied</code> is the polite check; the database rule catches a replayed POST or a race.</li>
+<li><b>EAGER and LAZY.</b> The three <code>@ManyToOne</code> links and the <code>@OneToOne</code> are EAGER, so a page can print <code>application.student.user.fullName</code> after the transaction ended. The three <code>@OneToMany</code> lists are LAZY and throw <code>LazyInitializationException</code> on a detached entity, so the beans count with queries instead.</li>
+<li><b>Named queries.</b> 16 are defined (for example <code>JobApplication.exists</code>). Three are never called: <code>StudentProfile.byRoll</code>, <code>Company.byName</code>, <code>Drive.byCompany</code>.</li>
+</ul>
+
+<h3>persistence.xml</h3>
+<pre><code>&lt;persistence-unit name="placementPU" transaction-type="JTA"&gt;            line 18
+  &lt;provider&gt;org.hibernate.jpa.HibernatePersistenceProvider&lt;/provider&gt;  line 19
+  &lt;jta-data-source&gt;java:app/jdbc/placementDS&lt;/jta-data-source&gt;        line 26
+  hibernate.hbm2ddl.auto = update                                      line 47</code></pre>
+<ul>
+<li>Hibernate 6.4.4 (the server log says "Hibernate ORM core version 6.4.4.Final") does the mapping, not whatever the server bundles. JTA: GlassFish owns the transaction, Hibernate joins it. <code>update</code> adds missing tables on deploy and never drops data; <code>create-drop</code> would wipe it.</li>
+</ul>
+
+<h3>Entity lifecycle with a real example</h3>
+<ul>
+<li><b>Transient:</b> <code>new JobApplication(...)</code>, <code>ApplicationService.java</code> line 79.</li>
+<li><b>Managed:</b> after <code>em.persist</code> (line 80) or <code>em.find</code> in <code>updateStatus</code> (line 88). <code>setStatus</code> on a managed entity is enough: the UPDATE runs at commit.</li>
+<li><b>Detached:</b> anything a bean returns, because the transaction is over. <code>driveService.find()</code> runs with no transaction, so the servlet gets a detached drive. <code>DriveService.save</code> uses <code>merge</code> for one with an id.</li>
+<li><b>Removed:</b> <code>em.remove(application)</code> in <code>withdraw</code>, line 119. The DELETE runs at commit.</li>
+</ul>
+
+<h3>The eligibility engine, step by step</h3>
+<p><code>EligibilityRules.check(student, drive, alreadyApplied, today)</code>, line 32. A null student or drive is rejected at once (line 36). Otherwise it never stops at the first failure: every failing rule adds a reason. <code>DriveService.check()</code> (line 148) asks the database one question, <code>hasApplied</code>, then calls it with <code>LocalDate.now()</code>.</p>
+<ul>
+<li><b>1 Drive status</b> (41): not OPEN. "This drive has been closed by the placement cell."</li>
+<li><b>2 Deadline</b> (44): last date before today, the last day itself passes. "The last date to apply was 2026-08-29."</li>
+<li><b>3 CGPA</b> (47): below the minimum, equal passes. "Requires a CGPA of 7.50, your record shows 5.60."</li>
+<li><b>4 Backlogs</b> (52): above the limit, equal passes. "Allows at most 0 backlog(s), your record shows 3."</li>
+<li><b>5 Branch</b> (57): the drive lists branches and none matches, ignoring case. Empty list means any. "Open to Mechanical, Civil, your branch is Computer Science."</li>
+<li><b>6 Already applied</b> (64): a flag, not a rejection. <code>isEligible()</code> stays true, <code>isCanApply()</code> is false.</li>
+</ul>
+<div class="warn"><p>There is no "already placed" rule. A student holding an offer can still apply. Placement status only feeds counts and displays (<code>countPlaced</code>, <code>placedStudentIds</code>). If asked, say so.</p></div>
+<p>It also runs inside the POST in <code>ApplicationServlet</code> (line 90). <code>EligibilityRulesTest</code> has 10 tests; the whole suite is 146.</p>
+
+<h3>The audit trail</h3>
+<ul>
+<li><code>@AroundInvoke record()</code> wraps each method of a bean with <code>@Interceptors</code>: <code>ctx.proceed()</code> (line 52), times it, hands the row to <code>AuditWriter</code>.</li>
+<li><b>Reads are skipped.</b> A name starting <code>has, for, list, find, count, placed, statusBreakdown, search, check</code> or ending <code>Taken</code> writes no row on success (lines 31, 69). A failing read is still recorded.</li>
+<li><b>Entities print as Type#id</b> (<code>label()</code>, line 117), for example <code>StudentProfile#1, Drive#8</code> for <code>apply</code>. Strings, numbers and enums print as themselves.</li>
+<li><b>Secrets are redacted:</b> a parameter named password, secret, token or credential prints <code>[redacted]</code> (line 131).</li>
+<li>The actor is always <code>portal</code> (line 149): sign in is by the app's own filter, so the audit does not record which officer acted.</li>
+</ul>
+
+<h3>The message driven bean path</h3>
+<ul>
+<li><b>Message and sender:</b> a text string such as "Aarti Deshpande moved from Applied to Shortlisted for Lumen Health", sent by <code>NotificationSender.send()</code> from <code>apply</code>, <code>updateStatus</code>, <code>withdraw</code> and <code>ShortlistBean.commit</code>.</li>
+<li><b>Consumer:</b> <code>NotificationMDB.onMessage()</code> (line 43) logs "Notification delivered: ..." and saves <code>AuditLog("notifier", "NOTIFICATION", body)</code>, after the officer's request has returned.</li>
+<li><b>Proof:</b> Audit page, search <code>NOTIFICATION</code> (actor <code>notifier</code>), or search <code>server\glassfish7\glassfish\domains\domain1\logs\server.log</code> for <code>Notification delivered</code>.</li>
+</ul>
+
+<h2>5. Code walk in VS Code</h2>
+<ol class="steps">
+<li><b><code>persistence.xml</code> 18 to 47; <code>JobApplication.java</code> 26, 49 to 54; <code>StudentProfile.java</code> 39, 65.</b> Say: "Hibernate is the provider. This side owns the foreign keys, the unique key stops a double application, lists are lazy."</li>
+<li><b><code>ApplicationService.java</code> lines 24 to 32, <code>apply</code> 75, <code>updateStatus</code> 87.</b> Say: "No begin or commit. The container makes the transaction, Hibernate saves lines 93 and 94 at commit, and a message is queued." Then <code>DriveService.java</code> 148, <code>EligibilityRules.java</code> 32 to 66, <code>EligibilityRulesTest.java</code> 139: "A static method, so tests need no server."</li>
+<li><b><code>NotificationSender.java</code> 26 to 51; <code>NotificationMDB.java</code> 27 to 52; <code>AuditInterceptor.java</code> 31, 45 to 57, 69, 117; <code>AuditWriter.java</code> 26.</b> Say: "The sender creates its own queue, nobody calls the MDB, the container does. <code>@AroundInvoke</code> wraps the call, reads are skipped, entities print as Type#id, and REQUIRES_NEW lets the audit row survive a rollback."</li>
+<li><b><code>ShortlistBean.java</code> 35, 50, 52 to 60, 108, 131; <code>ShortlistServlet.java</code> 135 to 136, 99, 152; <code>PortalStatsBean.java</code> 33, 34, 45, 84.</b> Say: "Stateful, one per officer, looked up by JNDI and kept in the HttpSession. Commit is one transaction, <code>@Remove</code> ends it. The singleton starts at deploy."</li>
+</ol>
+
+<h2>6. Live demo plan</h2>
+<p class="note">Base <code>http://localhost:8080/placement</code>. Every password is <code>Campus@2026</code>. Officer in one browser, student in a private window. Seed: 25 students, 14 drives, 85 applications, 6 offers (Aarti holds none).</p>
+<ol class="steps">
+<li><b>Not eligible, with reasons.</b> Sign in as <code>aarti.deshpande@campus.edu</code> (Computer Science, CGPA 8.7, 0 backlogs). Open <code>/app/drive?id=9</code> (Ironbridge): branch No, "Open to Mechanical, Civil, your branch is Computer Science." Then <code>/app/drive?id=13</code> (Orbit, closed): three reasons at once. As <code>rohan.kapoor@campus.edu</code> (CGPA 5.6, 3 backlogs) open <code>/app/drive?id=4</code>: CGPA and backlog reasons.</li>
+<li><b>Officer moves a status, audit shows it.</b> Sign in as <code>tpo@campus.edu</code>, open <b>Pipeline</b> (<code>/admin/applications</code>), find Aarti Deshpande, Lumen Health, Applied (application 8), choose Shortlisted, add a remark, <b>Save</b>. Open <b>Audit</b> (<code>/admin/audit</code>): two rows, <code>ApplicationService.updateStatus</code> with detail <code>8, SHORTLISTED, your remark</code>, then actor <code>notifier</code>, <code>NOTIFICATION</code>, "Aarti Deshpande moved from Applied to Shortlisted for Lumen Health". Note the <code>[redacted]</code> rows and that browsing added none. Search <code>server.log</code> for <code>Notification delivered</code>. Then set application 8 back to Applied.</li>
+<li><b>Withdraw refused, the exception story.</b> As Aarti open <b>My applications</b> (<code>/app/applications</code>). Withdraw only shows on Applied rows. Press F12, change the hidden <code>applicationId</code> in an Applied row's Withdraw form to <code>1</code> (Shortlisted), then click Withdraw and accept the dialog. The flash says the placement cell has already progressed it, so it cannot be withdrawn; the row is unchanged. Audit shows <code>ApplicationService.withdraw</code>, <code>1, 1 [failed: IllegalStateException]</code>. Say: "The bean threw, the container rolled back and wrapped it in <code>EJBException</code>, and the servlet reads <code>getCause()</code>." <b>Click without editing the id and that application is deleted.</b></li>
+<li><b>The stateful basket.</b> Officer, <b>Shortlist</b> (<code>/admin/shortlist</code>): pick a drive, tick two names, reload (ticks stay, nothing written), click <b>End the session</b>. <code>server.log</code> shows "ShortlistBean created" and "finish() called".</li>
+<li><b>MySQL, joined tables, unique key.</b> In PowerShell:
+<pre><code>$env:MYSQL_PWD = 'Placement@2026'
+&amp; "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u placement_user placement_cell
+
+SELECT a.id, u.full_name, c.name AS company, d.job_role, a.status
+FROM job_application a
+JOIN student_profile s ON s.id = a.student_id
+JOIN app_user u        ON u.id = s.user_id
+JOIN drive d           ON d.id = a.drive_id
+JOIN company c         ON c.id = d.company_id
+WHERE a.id = 8;</code></pre>
+Say: "Four tables, four foreign keys, built by Hibernate from the annotations." <code>SHOW CREATE TABLE job_application\G</code> shows <code>UNIQUE KEY uk_student_drive (student_id, drive_id)</code>. MySQL times are UTC, 5 h 30 min behind the pages. JNDI is on <code>/admin/system</code>.</li>
+</ol>
+
+<h2>7. Questions you will be asked</h2>
+
+<div class="qa"><p class="q">Stateless versus stateful session bean?</p>
+<p class="a">Stateless keeps nothing between calls, so any pooled instance serves any caller (the three services). Stateful is one instance per client that remembers its fields (<code>ShortlistBean</code>).</p></div>
+
+<div class="qa"><p class="q">Why is the shortlist bean stateful, and where is it held?</p>
+<p class="a">The officer ticks names across page loads, so the selection belongs to one person. The instance lives in the EJB container (30 minute timeout), the reference in that officer's HttpSession. A servlet field would be shared by all officers.</p></div>
+
+<div class="qa"><p class="q">Singleton bean and @Startup? Interceptor?</p>
+<p class="a">A singleton is one instance for the whole app; <code>@Startup</code> creates it at deploy. An interceptor's <code>@AroundInvoke</code> method wraps a business method and calls <code>ctx.proceed()</code>, so the beans hold no audit code.</p></div>
+
+<div class="qa"><p class="q">What is JNDI, and how does @EJB differ from a lookup?</p>
+<p class="a">JNDI is the container's name service: look up a name, get a resource, no URL or password in code. <code>@EJB</code> looks up once at creation; an explicit lookup gives a new stateful instance each time.</p></div>
+
+<div class="qa"><p class="q">What does @PersistenceContext do?</p>
+<p class="a">It injects a container managed, transaction scoped <code>EntityManager</code> for <code>placementPU</code>. You never open or commit it.</p></div>
+
+<div class="qa"><p class="q">Why Hibernate? JPA versus Hibernate?</p>
+<p class="a">JPA is the specification, Hibernate the implementation, named in <code>persistence.xml</code>. It writes the SQL, so only the dialect changes for another database.</p></div>
+
+<div class="qa"><p class="q">Which side owns the foreign key, and how is a double application stopped?</p>
+<p class="a">The side with <code>@JoinColumn</code>, for example <code>JobApplication.student</code>. <code>hasApplied</code> checks first, and the unique key <code>uk_student_drive</code> refuses a second row even if the check is bypassed.</p></div>
+
+<div class="qa"><p class="q">LAZY versus EAGER, and what is a detached entity?</p>
+<p class="a">EAGER loads the related row with the entity, LAZY waits until touched. A detached entity has lost its transaction, as in a servlet; a lazy list on it throws <code>LazyInitializationException</code>. <code>merge</code> reattaches it.</p></div>
+
+<div class="qa"><p class="q">What happens when an exception is thrown inside a transaction?</p>
+<p class="a">A runtime exception is a system exception: the container rolls the transaction back and the caller gets it wrapped in <code>EJBException</code>, so the servlet reads <code>getCause()</code>, as <code>withdraw</code> does. The audit row survives (<code>REQUIRES_NEW</code>). Reads use <code>SUPPORTS</code>, writes <code>REQUIRED</code>.</p></div>
+
+
+<div class="qa"><p class="q">How does the MDB work, and can a placed student apply again?</p>
+<p class="a"><code>NotificationSender.send</code> queues a text message; the container calls <code>NotificationMDB.onMessage</code>, which logs it and saves a NOTIFICATION row. A placed student can apply again: no rule forbids it.</p></div>
+
+<h2>8. If something goes wrong</h2>
+<table>
+<tr><th>Symptom</th><th>Cause and what to do</th></tr>
+<tr><td>No NOTIFICATION row</td><td>The MDB runs a moment later. Refresh, or check <code>server.log</code>.</td></tr>
+<tr><td>Withdrew a real row</td><td>You clicked before editing the id. Tell Karan.</td></tr>
+<tr><td>Server not answering</td><td>Tell Karan. Restarting never wipes data.</td></tr>
+</table>
+
+</main>
+</body>
+</html>

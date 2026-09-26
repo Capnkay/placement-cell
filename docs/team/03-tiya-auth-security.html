@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiya: Accounts and Security</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Tiya</span>
+<h1>Accounts, sessions and security</h1>
+<p class="sub">You answer every question about how someone gets in, how they stay in, and what stops the wrong person getting further.</p>
+
+<h2>1. Your role in one sentence</h2>
+<p>You own the front door: creating an account, proving who a person is, keeping them signed in safely, and refusing anyone who is not allowed on a page.</p>
+
+<h2>2. What you own</h2>
+<table>
+  <tr><th>File (under <code>src/main</code> unless stated)</th><th>Lines</th><th>What it is</th></tr>
+  <tr><td><code>web/LoginServlet.java</code></td><td>181</td><td>Sign in form and the sign in decision, session id change, cookies</td></tr>
+  <tr><td><code>web/RegisterServlet.java</code></td><td>158</td><td>Student sign up: every field checked on the server</td></tr>
+  <tr><td><code>web/LogoutServlet.java</code></td><td>48</td><td>Ends the session</td></tr>
+  <tr><td><code>web/SessionUser.java</code></td><td>69</td><td>The small object kept in the session: id, email, name, role. Never the hash</td></tr>
+  <tr><td><code>web/SessionTracker.java</code></td><td>43</td><td>HttpSessionListener that counts open sessions</td></tr>
+  <tr><td><code>web/ThemeServlet.java</code></td><td>46</td><td>Light or dark palette kept in a cookie</td></tr>
+  <tr><td><code>web/Web.java</code></td><td>107</td><td>Shared helpers: forward, redirect, flash messages, CSRF token</td></tr>
+  <tr><td><code>security/AuthFilter.java</code></td><td>115</td><td>The gate in front of <code>/app/*</code> and <code>/admin/*</code>: login, role, CSRF</td></tr>
+  <tr><td><code>security/RequestPaths.java</code></td><td>36</td><td>Turns the raw request URL into the path the container routes on, and says whether it is an admin path</td></tr>
+  <tr><td><code>security/PasswordHasher.java</code></td><td>97</td><td>PBKDF2 hashing and checking, JDK only</td></tr>
+  <tr><td><code>security/SecurityHeadersFilter.java</code></td><td>88</td><td>CSP and the other protective headers</td></tr>
+  <tr><td><code>ejb/AuthService.java</code></td><td>189</td><td>The only class that compares a password. Lockout, registration, change password</td></tr>
+  <tr><td><code>ejb/AuthResult.java</code></td><td>82</td><td>The outcome of a sign in and the wording of each message</td></tr>
+  <tr><td><code>util/EmailDomainVerifier.java</code></td><td>262</td><td>Disposable domain list and the DNS check on the email domain</td></tr>
+  <tr><td><code>webapp/WEB-INF/web.xml</code></td><td>73</td><td>Session timeout, cookie flags, error pages, scriptlets off</td></tr>
+  <tr><td><code>webapp/WEB-INF/views/login.jsp</code>, <code>register.jsp</code></td><td>138 + 167</td><td>The two forms</td></tr>
+  <tr><td><code>src/test/.../PasswordHasherTest.java</code>, <code>EmailDomainVerifierTest.java</code>, <code>RequestPathsTest.java</code></td><td>83 + 76 + 49</td><td>Tests for hashing, for the email domain checks, and for the admin path rule (5 tests, part of the 146 test suite)</td></tr>
+</table>
+<p class="note">You also lean on <code>util/Validators.java</code> (118 lines, shared with Chandra) for the email shape, name and password strength rules.</p>
+
+<h2>3. The 60 second explanation</h2>
+<div class="say">
+  <p>A student creates an account on the register page. The server checks every field itself, and for the email it does three
+  things: the shape must be valid, the domain must not be a known disposable inbox, and the domain must exist in DNS and be
+  able to receive mail. We do not send a confirmation link, so we prove the domain is real, not that the mailbox is.</p>
+  <p>The password is never stored. We store a PBKDF2 hash with 120,000 rounds and a fresh random salt for each person, so two
+  people with the same password get different hashes. On sign in we hash what was typed and compare. A wrong password and an
+  unknown email give the same message. Five wrong attempts lock the account for fifteen minutes.</p>
+  <p>After a good sign in we change the session id, which defeats session fixation, and keep a small user object in the
+  session. Every page under <code>/app</code> and <code>/admin</code> goes through one filter that checks there is a user,
+  that admin pages need the officer role, and that every POST carries a CSRF token. Every response carries a Content Security
+  Policy, and the JSP files sit under <code>WEB-INF</code> so nobody can open them by URL.</p>
+</div>
+
+<h2>4. Code walk in VS Code</h2>
+<p class="note">Line numbers are from the current files. Open each file, click the line, say the sentence. Do not scroll around.</p>
+<ol class="steps">
+  <li><b><code>views/register.jsp</code>, lines 57 to 58, 83, 92.</b> Point at <code>method="post"</code>, the hidden <code>csrf</code> input, and the two
+      <code>type="password"</code> inputs. There is no <code>value</code> attribute on either.<br>
+      <i>Say:</i> "Passwords are typed into masked boxes, sent by POST so they never appear in the URL, and the page is never given a password to print back, so a failed form comes back empty."</li>
+  <li><b><code>RegisterServlet.doPost</code>, lines 64 to 79.</b> Point at the checks in order: CSRF, name, then the email chain
+      (<code>isEmail</code>, <code>isDisposableDomain</code>, <code>hasValidMxOrA</code>, <code>emailTaken</code>), then password strength.<br>
+      <i>Say:</i> "The browser attributes are only a convenience. The server repeats every rule, and the email has four checks that run in this order."</li>
+  <li><b><code>Validators.isEmail</code>, lines 20 to 23 and 34 to 43.</b><br>
+      <i>Say:</i> "This is shape only: local part, at, dotted domain, last label two letters or more. <code>admin@campus</code> fails here. A made up domain passes here, which is why the next class exists."</li>
+  <li><b><code>EmailDomainVerifier.hasValidMxOrA</code>, lines 140 to 159.</b> Then <code>lookupViaJndi</code> (171) and <code>lookupViaHostname</code> (235).<br>
+      <i>Say:</i> "It asks DNS for an MX record, then A and AAAA as RFC 5321 allows. If the lookup cannot be completed at all, for example no network, it lets the sign up through and logs a warning, so a DNS outage cannot lock every student out. If DNS answers that the domain has nothing, it is refused."</li>
+  <li><b><code>EmailDomainVerifier.DISPOSABLE_DOMAINS</code>, lines 77 to 91.</b><br>
+      <i>Say:</i> "Forty three well known throwaway providers, such as mailinator. They resolve fine in DNS, so they need their own list."</li>
+  <li><b><code>AuthService.registerStudent</code>, lines 125 to 154.</b> Point at line 129 (email taken again), 132 (roll number clash), 140 to 141 (<code>PasswordHasher.hash</code> and <code>Role.STUDENT</code>).<br>
+      <i>Say:</i> "It checks duplicates a second time because two browsers can submit at once. The role is fixed to STUDENT in code. Sign up can never create an officer."</li>
+  <li><b><code>PasswordHasher</code>, lines 22 to 27, 32 to 39, 45 to 63.</b> Point at <code>PBKDF2WithHmacSHA256</code>, 120,000 iterations, 16 byte <code>SecureRandom</code> salt, the stored format, and <code>MessageDigest.isEqual</code> on line 59.<br>
+      <i>Say:</i> "Stored as <code>pbkdf2$120000$salt$hash</code>. The salt is new for every account. The comparison takes constant time. It is JDK only, no library."</li>
+  <li><b><code>LoginServlet.doPost</code>, lines 69 to 121.</b> Read down: CSRF (81), <code>authService.authenticate</code> (87), failure path (89 to 93), <code>changeSessionId</code> (98), <code>SessionUser</code> into the session (103 to 104), cookies (108 to 112), redirect (116 to 120).<br>
+      <i>Say:</i> "The servlet only decides where to send the person. All password logic is in one bean."</li>
+  <li><b><code>AuthService.authenticate</code>, lines 46 to 92.</b> Point at 52 (bad email shape never reaches the database), 58 to 62 (unknown email still burns a hash), 69 to 72 (locked check), 74 to 85 (the counter), 37 to 38 (the two constants).<br>
+      <i>Say:</i> "Each wrong password adds one to <code>failed_attempts</code> in the database. At five, <code>locked_until</code> is set fifteen minutes ahead and the counter resets. While locked, even the right password is refused."</li>
+  <li><b><code>AuthResult.badCredentials</code>, lines 44 to 50.</b><br>
+      <i>Say:</i> "Wrong password and unknown email produce the identical sentence, so the form cannot be used to find out who has an account. Once an account has two attempts left, the message adds a countdown."</li>
+  <li><b><code>RequestPaths</code>, lines 23 to 35, then <code>AuthFilter</code> line 53.</b><br>
+      <i>Say:</i> "The container routes <code>//admin/database</code> to the same servlet as <code>/admin/database</code>, but the raw URL still has both slashes. Our first version tested that raw text, so a student could slip past the officer check with a doubled slash. Now <code>canonical</code> strips the context path and any semicolon parameter and collapses repeated slashes, and <code>isAdminPath</code> tests the cleaned path. Five tests pin it."</li>
+  <li><b><code>AuthFilter</code>, lines 36, 58 to 61, 63 to 68, 70 to 89.</b><br>
+      <i>Say:</i> "One filter guards <code>/app/*</code> and <code>/admin/*</code>. No user in the session means a redirect to login with the original URL remembered. A student on an admin path gets a 403 and the <code>error-403.jsp</code> page. A POST without the right CSRF token is bounced. If reading the token fails because an upload was over the size limit, the user gets a flash message and a redirect, not a 500 page."</li>
+  <li><b><code>Web.csrfToken</code> and <code>csrfValid</code>, lines 73 to 101.</b><br>
+      <i>Say:</i> "A 32 byte random token lives in the session and is echoed in a hidden field. A form posted from another site cannot read it."</li>
+  <li><b><code>web.xml</code>, lines 22 to 31, and <code>SessionTracker</code>, lines 22 to 34.</b><br>
+      <i>Say:</i> "Session timeout is 30 minutes, the session cookie is HttpOnly, and only cookies are allowed, no session id in the URL. The listener counts sessions created and destroyed, and the officer's System page shows the numbers."</li>
+  <li><b><code>LoginServlet.writeCookie</code>, lines 171 to 180, and <code>ThemeServlet</code>, lines 33 to 37.</b><br>
+      <i>Say:</i> "Two cookies on sign in: the email if the box was ticked, and the time of the last visit. Both HttpOnly, 30 days, never a password. The theme cookie is set by the theme servlet for a year and is deliberately readable by scripts."</li>
+  <li><b><code>SecurityHeadersFilter</code>, lines 51 to 61, 70 to 74, 79 to 84.</b><br>
+      <i>Say:</i> "Scripts may only come from our own origin, no inline script at all. Framing is refused, forms may only post to us, and anything that is not a static asset is marked no-store."</li>
+  <li><b><code>Web.render</code> and <code>Web.redirect</code>, lines 44 to 60, then <code>LogoutServlet</code>, lines 26 to 38.</b><br>
+      <i>Say:</i> "Views are forwarded from <code>WEB-INF/views</code>, so a browser cannot ask for them. After a successful POST we redirect. Logout closes the shortlist bean, calls <code>session.invalidate()</code>, and redirects to login."</li>
+</ol>
+
+<h2>5. Live demo plan: create an account and sign in</h2>
+<p>About five minutes. Use a private browser window so no old cookies interfere. The app must be running at
+<code>http://localhost:8080/placement/</code>. Rehearse with an email at a real domain that is yours, for example
+<code>yourname@gmail.com</code>. Nothing is ever sent to it. Use a roll number nobody has used, such as <code>DEMO001</code>.</p>
+
+<ol class="steps">
+  <li><b>Open <code>http://localhost:8080/placement/register</code>.</b> Type anything in a password box and point at the dots.
+      Right click, Inspect, show <code>type="password"</code> and <code>method="post"</code>.
+      <br><i>Say:</i> "The password is masked, and it goes in the request body, not the address bar."</li>
+  <li><b>Fake email first.</b> Fill the form: name <code>Demo Student</code>, email <code>demo.student@thisdomaindoesnotexist123.com</code>,
+      password <code>Demo@12345</code> in both boxes, roll <code>DEMO001</code>, any branch, batch year <code>2027</code>, CGPA <code>7.5</code>,
+      backlogs <code>0</code>, phone <code>9000000001</code>. Click the create button.
+      <br><b>Expect:</b> the form comes back with "That domain doesn't appear to accept email. Check for a typo and try again." beside the email.
+      The two password boxes are empty and the other fields are kept. In the devtools Network tab the response is <code>400</code>.
+      <br><i>Say:</i> "The address is well formed, so the shape check passes. The domain has no DNS record, so the second check refuses it."
+      <br><b>Optional:</b> use <code>x@mailinator.com</code> to show "Please use a permanent email address, not a disposable or temporary inbox."</li>
+  <li><b>Valid sign up.</b> Change only the email to your real one, for example <code>yourname@gmail.com</code>, and type the passwords again. Submit.
+      <br><b>Expect:</b> a redirect to the sign in page with a green banner "Account created for DEMO001. Sign in with your email address to continue."
+      <br><i>Say:</i> "That was a POST followed by a redirect, so pressing refresh cannot create the account twice."</li>
+  <li><b>Show the stored password.</b> Open PowerShell and run:
+<pre><code>$env:MYSQL_PWD = 'Placement@2026'
+&amp; "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u placement_user placement_cell -e "SELECT id, email, user_role, password_hash FROM app_user ORDER BY id DESC LIMIT 3;"</code></pre>
+      <b>Expect:</b> your new row on top with <code>STUDENT</code> and a value like
+      <code>pbkdf2$120000$CX25cv2wd8tNj4Vcb1VCjg==$qBJs55Jt1cqYpZ//gtvCJZPH8ZE+IMaqZmlbD955kYA=</code>.
+      Point at the four parts: algorithm, 120000 rounds, salt, hash. Password <code>Demo@12345</code> appears nowhere.
+      <br><b>Then show the salt matters:</b> add <code>WHERE email IN ('aarti.deshpande@campus.edu','rahul.menon@campus.edu')</code>.
+      Both seeded accounts share the password <code>Campus@2026</code>, yet the salt and hash differ.
+      <br><i>Say:</i> "Even we cannot read the password back. A person with the same password gets a different hash because the salt is random per account."</li>
+  <li><b>Wrong password.</b> On the sign in page enter your new email and <code>Wrong@123</code>.
+      <br><b>Expect:</b> "Email or password is incorrect." with HTTP <code>401</code>, the email box kept, the password box empty.
+      Repeat with <code>nobody.here@gmail.com</code>: the identical sentence.
+      <br><i>Say:</i> "We never say which half was wrong. A stranger cannot use this form to find out who has an account."</li>
+  <li><b>Correct login.</b> Enter your email and <code>Demo@12345</code>, tick "Remember my email on this device", sign in.
+      <br><b>Expect:</b> a redirect to <code>/placement/app/dashboard</code> with "Welcome back". In devtools, Application, Cookies: <code>JSESSIONID</code>,
+      <code>remember_email</code> and <code>last_visit</code>, all HttpOnly, path <code>/placement</code>. In Network, open any page and show the
+      <code>Content-Security-Policy</code> response header.
+      <br><i>Say:</i> "The session id was replaced at this moment. The user object in the session holds the id, email and role, never the hash."</li>
+  <li><b>Student blocked from admin.</b> Signed in as this student, type <code>http://localhost:8080/placement/admin/database</code> in the address bar.
+      <br><b>Expect:</b> the "Not allowed" page, HTTP <code>403</code>. Then open a second private window (no session) and visit the same URL:
+      it redirects to the sign in page with "Please sign in to continue." and a <code>next=</code> parameter.
+      <br><i>Say:</i> "Two different answers: not signed in is a redirect, signed in with the wrong role is a 403."
+      </li>
+  <li><b>Try to get around it.</b> Still signed in as the student, type <code>http://localhost:8080/placement//admin/database</code> (two slashes after <code>placement</code>).
+      <br><b>Expect:</b> the same "Not allowed" page, HTTP <code>403</code>. <code>//admin//students</code> and <code>/admin;x=1/students</code> give 403 too.
+      <br><i>Say:</i> "We found this one in our own testing. The doubled slash used to get through because the check read the raw URL. Now the check reads the same cleaned path the container routes on."</li>
+  <li><b>Logout.</b> Click the sign out icon at the top right (its tooltip says "Sign out").
+      <br><b>Expect:</b> the sign in page with "You have been signed out." Press the browser Back button: you land on the sign in page, not the dashboard.
+      <br><i>Say:</i> "The session is invalidated on the server and every page is sent with no-store, so Back cannot show a cached dashboard."</li>
+  <li><b>Optional, lockout.</b> Sign in to the new account with a wrong password five times. On the third and fourth you see
+      "2 attempts left" and "1 attempt left before this account is locked". The fifth gives "Too many failed attempts. This account is locked for another 15 minutes."
+      A correct password is now refused as well. Undo it: sign in as <code>tpo@campus.edu</code>, open Students, open the account, click "Clear the lockout".
+      <br><span class="note">Never do this on <code>aarti.deshpande@campus.edu</code> or the officer account. Use your own demo account.</span></li>
+</ol>
+
+<div class="warn">
+  <p>After the demo, remove your test account: as the officer open Students, open the account, click "Remove from the register". Do not run any delete query in mysql. In the
+  <code>locked_until</code> column the driver stores UTC, so the time can look about five and a half hours behind the clock. That is display only.</p>
+</div>
+
+<h2>6. Servlet course topics mapped to this code</h2>
+<table>
+  <tr><th>Topic</th><th>Where in the code</th></tr>
+  <tr><td>Servlet lifecycle</td><td><code>LoginServlet</code>: the container creates one instance, calls <code>init()</code> once, calls <code>service()</code> for every request (which hands GET to <code>doGet</code>, line 49, and POST to <code>doPost</code>, line 69), and calls <code>destroy()</code> when the app is undeployed. One instance serves every user at once, so the class keeps no per user fields, only injected beans. The same three steps are visible in <code>AuthFilter</code>: <code>init</code> line 42, <code>doFilter</code> line 47, <code>destroy</code> line 112.</td></tr>
+  <tr><td>Servlet declaration</td><td><code>@WebServlet</code> on <code>LoginServlet</code> line 33. <code>web.xml</code> holds only what has no annotation: session, error pages, JSP settings.</td></tr>
+  <tr><td>Request parameters, encoding</td><td><code>request.getParameter("email")</code> line 74, <code>setCharacterEncoding("UTF-8")</code> line 72</td></tr>
+  <tr><td>RequestDispatcher forward</td><td><code>LoginServlet</code> lines 65 and 132, <code>RegisterServlet</code> line 117, <code>AuthFilter</code> line 66, <code>Web.render</code> line 48</td></tr>
+  <tr><td>Redirect, Post-Redirect-Get</td><td><code>Web.redirect</code> lines 57 to 60, used at <code>LoginServlet</code> line 120 and <code>RegisterServlet</code> line 126. <code>LogoutServlet</code> line 38 and <code>AuthFilter</code> lines 78, 86 and 108 call <code>sendRedirect</code> directly</td></tr>
+  <tr><td>Request attributes</td><td><code>fail()</code> in <code>LoginServlet</code>, lines 126 to 129: <code>error</code>, <code>email</code>, <code>csrf</code> are read in the JSP as <code>${error}</code></td></tr>
+  <tr><td>HttpSession</td><td>Created <code>LoginServlet</code> line 79, user stored line 104, id changed line 98, read in <code>Web.current</code> line 51, destroyed <code>LogoutServlet</code> line 36, timeout <code>web.xml</code> line 23</td></tr>
+  <tr><td>Cookies</td><td><code>LoginServlet.writeCookie</code> lines 171 to 180, <code>readCookie</code> lines 152 to 169, <code>ThemeServlet</code> lines 33 to 37, session cookie flags in <code>web.xml</code> lines 24 to 27</td></tr>
+  <tr><td>Filter</td><td><code>AuthFilter</code> (<code>/app/*</code>, <code>/admin/*</code>) and <code>SecurityHeadersFilter</code> (<code>/*</code>), both calling <code>chain.doFilter</code></td></tr>
+  <tr><td>Listener</td><td><code>SessionTracker</code>: <code>@WebListener</code>, <code>sessionCreated</code> line 23, <code>sessionDestroyed</code> line 31. Read by <code>SystemServlet</code> lines 48 and 49</td></tr>
+  <tr><td>Error pages</td><td><code>web.xml</code> lines 33 to 48: 404, 403, 500 and any uncaught <code>Throwable</code></td></tr>
+  <tr><td>JSP, EL, JSTL</td><td><code>login.jsp</code> uses <code>c:out</code> to escape every value and <code>c:if</code> for messages. Scriptlets are switched off in <code>web.xml</code> lines 58 and 67</td></tr>
+  <tr><td>EJB and injection</td><td><code>AuthService</code> is <code>@Stateless</code>, injected with <code>@EJB</code> at <code>LoginServlet</code> line 39. Every call is logged by the audit interceptor with the password redacted</td></tr>
+</table>
+
+<h2>7. Questions you will be asked</h2>
+
+<div class="qa">
+  <p class="q">How is an account created?</p>
+  <p class="a">Student self sign up only, at <code>/register</code>. <code>RegisterServlet</code> checks the CSRF token, name, email (four checks), password strength, roll number, branch, batch year, CGPA, backlogs and phone. Only if there are no errors does it call <code>AuthService.registerStudent</code>, which checks for a duplicate email or roll number again, hashes the password, and saves an <code>app_user</code> row plus a student profile. The role is hard coded to STUDENT. Officers exist only through the seeder, never through sign up.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Would it accept a fake email?</p>
+  <p class="a">It rejects an address whose domain does not exist: <code>test@thisdomaindoesnotexist123.com</code> gets "That domain doesn't appear to accept email". It rejects a malformed one such as <code>admin@campus</code>, and 43 known disposable providers such as mailinator. It would still accept an invented mailbox at a real domain, for example <code>asdf1234@gmail.com</code>, because we do not check the mailbox.</p>
+</div>
+
+<div class="qa">
+  <p class="q">So do you verify the email really exists?</p>
+  <p class="a"><b>Done:</b> shape check (<code>Validators.isEmail</code>), disposable blocklist, and a DNS lookup for an MX record with A and AAAA as fallback (<code>EmailDomainVerifier</code>). That proves the domain can receive mail. <b>Not done:</b> no confirmation link, no OTP, no test send, and nothing proves the person owns the mailbox. That needs an SMTP account we do not have. It is the recorded next step (Security review S10). If DNS cannot be reached at all, the check lets the sign up through and logs a warning, on purpose.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Does it hide the password?</p>
+  <p class="a">Yes on screen: the inputs are <code>type="password"</code> on both forms. The forms use POST, so the password is in the body, not the URL. When a form fails, the servlet forwards the page back with no password value, so the boxes come back empty. The audit trail records the call as <code>authenticate(email, [redacted])</code>. Honest limit: the app runs on plain HTTP on localhost, so on a real network it would need HTTPS.</p>
+</div>
+
+<div class="qa">
+  <p class="q">How is the password stored? Can you see it?</p>
+  <p class="a">As <code>pbkdf2$120000$salt$hash</code> in <code>app_user.password_hash</code>: PBKDF2 with HMAC SHA 256, 120,000 rounds, a 16 byte random salt per account, 256 bit output (<code>PasswordHasher</code>). It is one way, so we cannot read the original. Login hashes the typed password with the stored salt and compares in constant time. The salt means two people with the same password get different hashes.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What happens after wrong passwords?</p>
+  <p class="a">Each wrong password adds one to <code>failed_attempts</code> in the database (<code>AuthService</code> lines 74 to 85). The message is "Email or password is incorrect." with HTTP 401. With two or one attempts left it adds a countdown. The fifth sets <code>locked_until</code> fifteen minutes ahead. While locked, even the correct password is refused. A correct sign in resets the counter. The officer can clear a lockout early on the student's page. The lock lives in the database, so restarting the server does not clear it, and it counts per account, not per computer.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Can someone tell which emails have accounts?</p>
+  <p class="a">Not from the wrong password message: unknown email and wrong password read the same, and an unknown email still burns one hash so the timing matches. Two small leaks exist and you should say so: the countdown and lockout messages only appear for real accounts, and the register page says "An account already exists for that address".</p>
+</div>
+
+<div class="qa">
+  <p class="q">Can a student open the admin pages?</p>
+  <p class="a">No. <code>AuthFilter</code> line 63 checks the role for every path under <code>/admin</code>, and a student gets HTTP 403 with the "Not allowed" page. Someone not signed in is redirected to login. The path it tests is cleaned first by <code>RequestPaths.canonical</code>, so <code>//admin/database</code> and <code>/admin;x=1/students</code> are refused too. We tested all of these as a student. This was a real bug in an earlier version: the check read the raw URL, the container routed on the cleaned one, and a doubled slash got through. It is fixed and covered by <code>RequestPathsTest</code>.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What is session fixation and how do you stop it?</p>
+  <p class="a">An attacker plants a known session id in the victim's browser, waits for the victim to sign in, then uses the same id. We call <code>request.changeSessionId()</code> right after a successful password check (<code>LoginServlet</code> line 98), so the pre login id becomes useless. Only cookies are allowed for the id (<code>web.xml</code> line 30), so it cannot sit in a URL.</p>
+</div>
+
+<div class="qa">
+  <p class="q">How long does a session last, and who counts them?</p>
+  <p class="a">30 minutes of inactivity: <code>web.xml</code> line 23, and <code>SessionTracker</code> line 24 sets the same 30 minutes when each session is created. Logout invalidates it at once. <code>SessionTracker</code> implements <code>HttpSessionListener</code>; the container calls it on creation and on invalidation or timeout, and the officer's System page shows "Sessions open now".</p>
+</div>
+
+<div class="qa">
+  <p class="q">Which cookies do you set, and with what flags?</p>
+  <p class="a"><code>JSESSIONID</code>: HttpOnly (in <code>web.xml</code>). <code>remember_email</code> (only if the box is ticked) and <code>last_visit</code>: HttpOnly, 30 days, path <code>/placement</code>, values percent encoded. <code>portal_theme</code>: one year, not HttpOnly, only says light or dark. No cookie holds a password. Not set: the <code>Secure</code> flag, because a secure cookie would never be sent over plain HTTP on localhost (accepted risk A2 in the review), and no SameSite attribute is set in our code.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why are the JSPs under WEB-INF? Forward or redirect?</p>
+  <p class="a">Anything under <code>WEB-INF</code> cannot be requested by URL: we tested <code>/placement/WEB-INF/views/login.jsp</code> and got 404. Only a servlet can reach a view, by <code>RequestDispatcher.forward</code>, which happens inside the server: the address bar keeps the servlet URL. A redirect sends the browser a 302 and it makes a second request. We forward to show a page, including a failed login, and redirect after every successful POST (Post-Redirect-Get) so refresh cannot repeat the action.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What are CSRF and the Content Security Policy?</p>
+  <p class="a"><b>CSRF:</b> another site making your browser submit a form to us. Every POST needs the random per session token in a hidden field (<code>Web.csrfValid</code>). <b>CSP:</b> <code>script-src 'self'</code> with no inline scripts, so the browser refuses any script we did not serve. Plus <code>frame-ancestors 'none'</code> and <code>X-Frame-Options: DENY</code> against clickjacking, <code>form-action 'self'</code>, <code>nosniff</code>, and no-store on every page that is not a static asset. Not set: HSTS, because we have no HTTPS.</p>
+</div>
+
+<h2>8. If something goes wrong</h2>
+
+<div class="card">
+  <h3>Fixed: the admin role check bypass</h3>
+  <p><b>What it was.</b> The officer check tested the raw request URL with <code>startsWith("/admin/")</code>. The container routes on a cleaned path, so
+  <code>/placement//admin/database</code> reached the officer Database page as a student. <b>Why.</b> The raw URL and the routed path are not the same text.
+  <b>The fix.</b> <code>RequestPaths.canonical</code> (strip context path and <code>;</code> parameters, collapse repeated slashes) and <code>RequestPaths.isAdminPath</code>,
+  used at <code>AuthFilter</code> lines 53 and 63. <b>Checked.</b> As a student, <code>/admin/database</code>, <code>//admin/database</code>, <code>//admin//students</code> and
+  <code>/admin;x=1/students</code> all return 403. If asked, say plainly that we found it ourselves and closed it.</p>
+</div>
+
+<table>
+  <tr><th>What you see</th><th>Why, and what to do</th></tr>
+  <tr><td>Sign up says the domain "doesn't appear to accept email" for a real address</td><td>DNS on this network answered that the name does not exist. Try another network, or use <code>gmail.com</code>. If DNS cannot be reached at all the code lets the sign up through, so a refusal means a definite "no".</td></tr>
+  <tr><td>"This page sat open too long to be verified" or "could not be verified"</td><td>The CSRF token did not match: the session expired (30 minutes), cookies are blocked, or the page was opened in another window. Reload the page and fill it in again.</td></tr>
+  <tr><td>"An account already exists" or "Roll number ... is already registered"</td><td>You already used that email or roll number in a rehearsal. Pick new ones, or remove the old test account as the officer.</td></tr>
+  <tr><td>Demo account is locked</td><td>Five wrong attempts. Wait 15 minutes, or as the officer open Students, open the account, click "Clear the lockout".</td></tr>
+  <tr><td>Correct password refused with 401</td><td>Check whether the message says locked, deactivated, or "not a valid email address". Each has its own text. Otherwise check Caps Lock: the email is not case sensitive, the password is.</td></tr>
+  <tr><td>Signed out in the middle of the demo</td><td>30 minute inactivity timeout, or the server was restarted. Sign in again.</td></tr>
+  <tr><td>mysql says "Access denied ... using password: NO"</td><td>Set <code>$env:MYSQL_PWD = 'Placement@2026'</code> in the same PowerShell window first.</td></tr>
+  <tr><td>The app does not load</td><td>Do not restart it yourself mid presentation. Ask whoever started it to check the server window.</td></tr>
+</table>
+
+<div class="card">
+  <h3>What is not implemented (say it plainly if asked)</h3>
+  <ul>
+    <li>No email confirmation link, no OTP, no forgot password flow. A student who forgets a password cannot reset it by email. The change password action needs the current password (<code>AuthService.changePassword</code>).</li>
+    <li>Only the email domain is checked. The mailbox is not.</li>
+    <li>No HTTPS, so no <code>Secure</code> cookie flag and no HSTS. On a real network the password and session id would travel in clear text.</li>
+    <li>Lockout is per account, not per address, and the seeded demo accounts share one password (accepted risk A6 in the security review).</li>
+    <li>Logout works on a plain GET link, so another site could sign a user out. That is a nuisance, not a data risk.</li>
+    <li>The roles are two only: officer and student. There is no role management screen.</li>
+  </ul>
+</div>
+
+</main>
+</body>
+</html>
+

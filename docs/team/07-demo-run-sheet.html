@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Run Sheet</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Everyone</span>
+<h1>Demo run sheet</h1>
+<p class="sub">One new student is followed through every layer of the app, so each part of the presentation hands over to the next.</p>
+
+<div class="stat">
+  <div><b>22</b><span>minutes of demo</span></div>
+  <div><b>6</b><span>speakers, in order</span></div>
+  <div><b>1</b><span>student followed end to end</span></div>
+</div>
+
+<h2>The demo student</h2>
+<p>Tiya creates this account live. Nobody else uses it before then, and <code>-Reseed</code> removes it afterwards.</p>
+<table>
+  <tr><th>Field</th><th>Type exactly</th></tr>
+  <tr><td>Full name</td><td><code>Demo Student</code></td></tr>
+  <tr><td>Email</td><td><code>demo.student.cs@gmail.com</code> (a real domain, so the domain check passes)</td></tr>
+  <tr><td>Password</td><td><code>Demo@2026x</code></td></tr>
+  <tr><td>Roll number</td><td><code>CS26100</code></td></tr>
+  <tr><td>Branch, year</td><td>Computer Science, 2026</td></tr>
+  <tr><td>CGPA, backlogs</td><td><code>8.0</code>, <code>0</code></td></tr>
+  <tr><td>Mobile</td><td><code>9876543210</code></td></tr>
+</table>
+<p class="note">With CGPA 8.0 and no backlogs, this student qualifies for several drives and is refused by others for a
+clear reason, which is exactly what Chandra needs to show.</p>
+
+<h2>The order</h2>
+<table>
+  <tr><th>Time</th><th>Who</th><th>What</th><th>Screen</th></tr>
+  <tr><td>0:00</td><td><b>Karan</b></td><td>What the app is, who uses it, how data moves in and out, the architecture picture</td><td>Login page, then <code>00-start-here</code> diagram</td></tr>
+  <tr><td>2:30</td><td><b>Tiya</b></td><td>Creating an account: fake email refused, valid signup, password hash in MySQL, wrong password, sign in, student blocked from admin</td><td>Browser, then MySQL</td></tr>
+  <tr><td>7:00</td><td><b>Kinjal</b></td><td>The pages and the validation: an error on the profile form, resume upload, how a JSP gets its data</td><td>Browser, then VS Code</td></tr>
+  <tr><td>10:30</td><td><b>Chandra</b></td><td>Drives board and the eligibility engine, apply, officer moves the status, audit row appears, EJB types</td><td>Browser (two windows), then VS Code</td></tr>
+  <tr><td>15:00</td><td><b>Yuvraj</b></td><td>The connectivity story: the row Chandra just created, found in MySQL; Reports; Database page; Classroom JDBC against the practical sample</td><td>VS Code, browser, MySQL</td></tr>
+  <tr><td>20:00</td><td><b>Karan</b></td><td>Close: the officer overview now shows the new application, what was not built, questions</td><td>Officer overview</td></tr>
+</table>
+
+<h2>The hand overs</h2>
+<ol class="steps">
+  <li><b>Karan to Tiya.</b> "To use any of this, someone has to get an account. Tiya will create one live."</li>
+  <li><b>Tiya to Kinjal.</b> "The student is signed in and lands on a dashboard that says the profile is incomplete. Kinjal will show how the pages work and finish the profile."</li>
+  <li><b>Kinjal to Chandra.</b> "With a complete profile the student can look at the drives. Chandra will show how the app decides what they can apply for."</li>
+  <li><b>Chandra to Yuvraj.</b> "That application is now a row in MySQL. Yuvraj will show how the app reaches the database and prove the row is there."</li>
+  <li><b>Yuvraj to Karan.</b> "Karan will close by showing the officer's overview, which now counts this application."</li>
+</ol>
+
+<h2>Before you start: setup checklist</h2>
+<table>
+  <tr><th>When</th><th>Who</th><th>Do this</th></tr>
+  <tr><td>Sunday night</td><td>Karan</td><td>Pull the latest code. Run the whole demo once, start to finish, on the presenting laptop. Time it.</td></tr>
+  <tr><td>Monday, before leaving</td><td>Karan</td><td>Start MySQL. Run <code>.\run.ps1 -Reseed</code> and wait for "deployed". Fresh dates, and the demo student does not exist yet.</td></tr>
+  <tr><td>Monday, at the venue</td><td>Karan</td><td>Open <code>http://localhost:8080/placement/</code>. Sign in as the officer once, then sign out, to prove it works.</td></tr>
+  <tr><td>Monday, at the venue</td><td>Yuvraj</td><td>Open MySQL Workbench or a terminal on <code>placement_cell</code> with the queries from <code>demo-queries.sql</code> ready.</td></tr>
+  <tr><td>Monday, at the venue</td><td>Everyone</td><td>VS Code open on <code>placement-cell</code> with your own files already open in tabs, in the order you will show them.</td></tr>
+  <tr><td>Monday, at the venue</td><td>Chandra</td><td>Two browser windows: one normal for the student, one private for the officer, so the two sessions do not collide.</td></tr>
+  <tr><td>Monday, at the venue</td><td>Chandra</td><td>A spare terminal running <code>Get-Content server\glassfish7\glassfish\domains\domain1\logs\server.log -Wait -Tail 3</code>. When the student applies, a line <code>Notification delivered: Demo Student applied to ...</code> appears: that is the message driven bean.</td></tr>
+  <tr><td>Monday, at the venue</td><td>Yuvraj</td><td>Before you begin, the table <code>mock_score</code> does not exist. The first classroom save creates it, which is worth saying aloud.</td></tr>
+</table>
+
+<div class="warn"><p>Do not press the reseed on the presenting laptop once the demo has begun: it deletes the demo student
+and the application you are about to show. If something breaks in the middle, reload the page first. Only reseed between
+runs.</p></div>
+
+<h2>If the projector, network or server fails</h2>
+<table>
+  <tr><th>Problem</th><th>Do this</th></tr>
+  <tr><td>Server not answering</td><td><code>.\run.ps1</code> in the project folder, wait about a minute. Meanwhile talk through the architecture picture.</td></tr>
+  <tr><td>Email domain check is slow or fails</td><td>It looks up the domain's mail records on the network. Without internet, a valid domain can be refused. Use an account from the seeded list instead and explain the check using the code.</td></tr>
+  <tr><td>Everything is broken</td><td>Screenshots of every step of this demo are in <code>docs/team/backup-screenshots/</code>, numbered in the order of the presentation. Show those and the code.</td></tr>
+</table>
+
+<h2>What each person shows, in one line</h2>
+<table>
+  <tr><th>Person</th><th>The one thing that must land</th></tr>
+  <tr><td>Karan</td><td>Two kinds of user, and how information flows in and out.</td></tr>
+  <tr><td>Tiya</td><td>A fake email is refused, the password is never stored as text, and a student cannot enter the officer pages.</td></tr>
+  <tr><td>Kinjal</td><td>Pages contain no Java, every value is escaped, and the server re-checks what the browser checked.</td></tr>
+  <tr><td>Chandra</td><td>The business rules live in EJB beans, and every write is audited without the beans knowing.</td></tr>
+  <tr><td>Yuvraj</td><td>The app reaches MySQL through a pool by name, and the row created a moment ago is in the table.</td></tr>
+</table>
+
+</main>
+</body>
+</html>

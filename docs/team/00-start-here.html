@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start Here: Campus Placement and Training Cell</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Everyone reads this first</span>
+<h1>Campus Placement and Training Cell</h1>
+<p class="sub">Advanced Java project, B.Sc. IT Semester V. Ten minutes here and you can explain the whole app.</p>
+
+<div class="stat">
+  <div><b>2</b><span>portals: student, officer</span></div>
+  <div><b>25</b><span>students</span></div>
+  <div><b>10</b><span>companies</span></div>
+  <div><b>14</b><span>drives</span></div>
+  <div><b>85</b><span>applications</span></div>
+  <div><b>146</b><span>automated tests</span></div>
+</div>
+
+<h2>1. What the app is</h2>
+<div class="say">
+  <p>A college placement cell has to tell hundreds of students which company drives they can sit for, collect
+  their applications, and move each one through shortlist, interview and offer. This app does that in one place.
+  A student sees only the drives their own record qualifies them for, and when they do not qualify it says exactly
+  why. The placement officer announces drives, tracks every candidate and reads live reports straight from the
+  database.</p>
+</div>
+<p>It is a Jakarta EE 10 web application: Servlets and JSP on the front, EJB beans for the business rules,
+JPA with Hibernate and hand-written JDBC underneath, and MySQL 8 as the database.</p>
+
+<h2>2. Who exactly uses it</h2>
+<table>
+  <tr><th>User</th><th>How they get an account</th><th>What they can do</th><th>Their pages</th></tr>
+  <tr>
+    <td><b>Student</b></td>
+    <td>Registers themselves at <code>/register</code>, or the officer imports them in bulk.</td>
+    <td>Keep a profile and resume, browse drives, see eligibility with reasons, apply, withdraw,
+        follow status and notes from the cell.</td>
+    <td><code>/app/...</code></td>
+  </tr>
+  <tr>
+    <td><b>Placement officer</b> (admin)</td>
+    <td>Created by the college, never through the public form. Three exist in the demo data.</td>
+    <td>Add companies, announce and close drives, move candidates through the pipeline, shortlist in batches,
+        import students, read reports, browse the database, read the audit trail.</td>
+    <td><code>/admin/...</code></td>
+  </tr>
+</table>
+<div class="card">
+  <h3>What about the companies?</h3>
+  <p>Recruiters do not log in. A company is a record the officer maintains, and the officer posts drives on
+  its behalf, which is how a placement cell really works: the cell is the go-between. If the teacher asks
+  "who puts up the job opportunities", the answer is the placement officer, from the Drives page.</p>
+</div>
+
+<h2>3. How data gets in, and how it gets out</h2>
+<div class="two">
+<div>
+<h3>Data in</h3>
+<table>
+  <tr><th>Who</th><th>Action</th><th>Lands in table</th></tr>
+  <tr><td>Student</td><td>Register</td><td><code>app_user</code>, <code>student_profile</code></td></tr>
+  <tr><td>Student</td><td>Edit profile, upload resume</td><td><code>student_profile</code> and a file on disk</td></tr>
+  <tr><td>Student</td><td>Apply or withdraw</td><td><code>job_application</code></td></tr>
+  <tr><td>Officer</td><td>Add a company</td><td><code>company</code></td></tr>
+  <tr><td>Officer</td><td>Announce or close a drive</td><td><code>drive</code></td></tr>
+  <tr><td>Officer</td><td>Bulk import students</td><td><code>app_user</code>, <code>student_profile</code></td></tr>
+  <tr><td>Officer</td><td>Move a candidate, shortlist</td><td><code>job_application</code> status and note</td></tr>
+  <tr><td>System</td><td>Every business write</td><td><code>audit_log</code></td></tr>
+  <tr><td>System</td><td>First start on an empty database</td><td>all tables, from <code>DataSeeder</code></td></tr>
+</table>
+</div>
+<div>
+<h3>Data out</h3>
+<table>
+  <tr><th>Who</th><th>Screen</th><th>What they see</th></tr>
+  <tr><td>Student</td><td>Drives board</td><td>Open drives, eligible or not, with the reason</td></tr>
+  <tr><td>Student</td><td>My applications</td><td>Status and the cell's latest note</td></tr>
+  <tr><td>Student</td><td>Resume link</td><td>Their own file, downloaded by the server</td></tr>
+  <tr><td>Officer</td><td>Overview</td><td>Totals, placed percentage, recent applications</td></tr>
+  <tr><td>Officer</td><td>Pipeline</td><td>Every application, filtered by drive and status, with a control to move it along</td></tr>
+  <tr><td>Officer</td><td>Reports</td><td>Branch and company numbers from plain JDBC, with the SQL shown</td></tr>
+  <tr><td>Officer</td><td>Database</td><td>Schema, rows and a read only SQL console</td></tr>
+  <tr><td>Officer</td><td>Audit</td><td>Who did what, how long it took</td></tr>
+  <tr><td>Both</td><td>Notification</td><td>A JMS message is queued on apply and on status change</td></tr>
+</table>
+</div>
+</div>
+
+<h2>4. Architecture in one picture</h2>
+<svg viewBox="0 0 800 330" width="100%" role="img" aria-label="Request flow from browser to MySQL">
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#1f4fa8"/>
+    </marker>
+  </defs>
+  <g font-size="13" fill="#16181d" stroke="#1f4fa8" stroke-width="1.5">
+    <rect x="10" y="130" width="90" height="60" rx="8" fill="#eef4ff"/>
+    <rect x="130" y="130" width="120" height="60" rx="8" fill="#eef4ff"/>
+    <rect x="280" y="130" width="110" height="60" rx="8" fill="#eef4ff"/>
+    <rect x="420" y="40" width="150" height="70" rx="8" fill="#f6f7f9"/>
+    <rect x="420" y="220" width="150" height="70" rx="8" fill="#f6f7f9"/>
+    <rect x="600" y="40" width="120" height="70" rx="8" fill="#f6f7f9"/>
+    <rect x="600" y="130" width="120" height="60" rx="8" fill="#e8f6ee" stroke="#1b6b45"/>
+    <rect x="600" y="220" width="120" height="70" rx="8" fill="#f6f7f9"/>
+    <rect x="280" y="250" width="110" height="50" rx="8" fill="#fff6e5" stroke="#8a5300"/>
+  </g>
+  <g font-size="13" text-anchor="middle" fill="#16181d">
+    <text x="55" y="157" font-weight="700">Browser</text><text x="55" y="175" font-size="11">student or officer</text>
+    <text x="190" y="152" font-weight="700">Filters</text><text x="190" y="170" font-size="11">AuthFilter, headers</text>
+    <text x="335" y="152" font-weight="700">Servlets</text><text x="335" y="170" font-size="11">controllers</text>
+    <text x="495" y="66" font-weight="700">EJB beans</text><text x="495" y="84" font-size="11">rules, shortlist, MDB,</text><text x="495" y="99" font-size="11">audit interceptor</text>
+    <text x="495" y="246" font-weight="700">JDBC layer</text><text x="495" y="264" font-size="11">reports, database page</text><text x="495" y="279" font-size="11">PreparedStatement</text>
+    <text x="660" y="66" font-weight="700">JPA + Hibernate</text><text x="660" y="84" font-size="11">entities, EntityManager</text>
+    <text x="660" y="157" font-weight="700">MySQL 8</text><text x="660" y="175" font-size="11">placement_cell</text>
+    <text x="660" y="246" font-weight="700">Connection pool</text><text x="660" y="264" font-size="11">java:app/jdbc/</text><text x="660" y="279" font-size="11">placementDS</text>
+    <text x="335" y="272" font-weight="700">JSP views</text><text x="335" y="290" font-size="11">JSTL and EL only</text>
+  </g>
+  <g stroke="#1f4fa8" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+    <path d="M100,160 L128,160"/><path d="M250,160 L278,160"/>
+    <path d="M390,150 L418,90"/><path d="M390,175 L418,232"/>
+    <path d="M570,75 L598,75"/><path d="M570,255 L598,255"/>
+    <path d="M660,110 L660,128"/><path d="M660,220 L660,192"/>
+    <path d="M335,190 L335,248"/>
+  </g>
+  <text x="400" y="322" font-size="11" text-anchor="middle" fill="#565c67">A servlet never writes HTML itself: it forwards to a JSP under WEB-INF, so no view can be opened by URL. Both data paths share one pool.</text>
+</svg>
+<p class="note">Read it left to right. A request meets the filters, then a servlet. The servlet asks an EJB (business
+rules and normal reads and writes through JPA) or the JDBC layer (reports and the database page). Both end at the
+same MySQL through the same server managed pool. The result goes back to a JSP, which produces the page.</p>
+
+<h2>5. Features at a glance</h2>
+<div class="two">
+<div class="card">
+  <h3>Student portal</h3>
+  <ul>
+    <li>Self registration with a real email domain check</li>
+    <li>Sign in with lockout after repeated failures</li>
+    <li>Profile: branch, CGPA, backlogs, phone, resume upload</li>
+    <li>Drives board that hides what you cannot apply for and says why</li>
+    <li>Apply, withdraw, and follow status with the cell's notes</li>
+    <li>Light and dark theme, remembered in a cookie</li>
+  </ul>
+</div>
+<div class="card">
+  <h3>Officer portal</h3>
+  <ul>
+    <li>Companies and drives with eligibility rules per drive</li>
+    <li>Application pipeline and a batch shortlist</li>
+    <li>Bulk import of students</li>
+    <li>Reports read with plain JDBC, SQL shown beside the result</li>
+    <li>Database page: schema, rows, guarded SQL console</li>
+    <li>Audit trail, system page, and the Classroom JDBC page</li>
+  </ul>
+</div>
+</div>
+
+<h2>6. Which course topic lives where</h2>
+<table>
+  <tr><th>Topic from the course</th><th>Where it is in this app</th></tr>
+  <tr><td>Servlets, lifecycle, annotations</td><td>Every class in <code>web/</code>, declared with <code>@WebServlet</code></td></tr>
+  <tr><td>RequestDispatcher</td><td><code>Web.render</code> forwards every page to its JSP</td></tr>
+  <tr><td>Cookies</td><td>Remember-my-email, theme, last visit</td></tr>
+  <tr><td>HttpSession and listener</td><td>Signed-in user in the session, <code>SessionTracker</code> counts sessions</td></tr>
+  <tr><td>File upload and download</td><td>Resume upload, <code>ResumeDownloadServlet</code></td></tr>
+  <tr><td>Non blocking I/O</td><td><code>BulkImportServlet</code> reads its body with a <code>ReadListener</code></td></tr>
+  <tr><td>JSP, actions, EL, JSTL</td><td>All views, scriptlets switched off in <code>web.xml</code></td></tr>
+  <tr><td>EJB: stateless, stateful, singleton, MDB, interceptor</td><td>Services, <code>ShortlistBean</code> and <code>MockScoreBean</code>, <code>DataSeeder</code>, <code>NotificationMDB</code>, <code>AuditInterceptor</code></td></tr>
+  <tr><td>JNDI</td><td>The datasource name and the stateful bean lookups</td></tr>
+  <tr><td>JPA with Hibernate</td><td><code>entity/</code> and <code>persistence.xml</code></td></tr>
+  <tr><td>JDBC</td><td><code>jdbc/</code>, plus the classroom style <code>MockScoreBean</code></td></tr>
+</table>
+
+<h2>7. Who explains what</h2>
+<table>
+  <tr><th>Person</th><th>Area</th><th>Read</th></tr>
+  <tr><td><b>Karan</b></td><td>The app itself: users, data in and out, demo, seed data, the student and officer flows</td><td><code>01-karan-app-overview</code></td></tr>
+  <tr><td><b>Yuvraj</b></td><td>MySQL connectivity and JDBC, the connectivity demo</td><td><code>02-yuvraj-mysql-jdbc</code></td></tr>
+  <tr><td><b>Tiya</b></td><td>Account creation, login, passwords, sessions, security</td><td><code>03-tiya-auth-security</code></td></tr>
+  <tr><td><b>Kinjal</b></td><td>JSP views, validation, resume upload, bulk import</td><td><code>04-kinjal-views-validation</code></td></tr>
+  <tr><td><b>Chandra</b></td><td>Entities, JPA, Hibernate, every EJB, tests</td><td><code>05-chandra-entities-ejb</code></td></tr>
+</table>
+<p>Everyone also reads <code>06-viva-questions</code> (every question we expect, with an owner and an answer) and
+<code>07-demo-run-sheet</code> (the order of the presentation, with timings).</p>
+
+<h2>8. Logins for the demo</h2>
+<table>
+  <tr><th>Role</th><th>Email</th><th>Password</th><th>Use it for</th></tr>
+  <tr><td>Officer</td><td><code>tpo@campus.edu</code></td><td><code>Campus@2026</code></td><td>The officer walkthrough</td></tr>
+  <tr><td>Student</td><td><code>aarti.deshpande@campus.edu</code></td><td><code>Campus@2026</code></td><td>Main student demo: eight applications, no offer yet, drives left to apply for</td></tr>
+  <tr><td>Student</td><td><code>rahul.menon@campus.edu</code></td><td><code>Campus@2026</code></td><td>A placed student (has an offer)</td></tr>
+  <tr><td>Student</td><td><code>sneha.pillai@campus.edu</code></td><td><code>Campus@2026</code></td><td>CGPA 9.1, a second live account</td></tr>
+</table>
+<p class="note">Every seeded account shares one password. That is for the demo only, and the hashes in the database
+are all different because each has its own salt.</p>
+
+<h2>9. Get it running on your laptop</h2>
+<ol>
+  <li>Clone the repository and open the folder <code>placement-cell</code> in VS Code.</li>
+  <li>Start the MySQL 8 service. In MySQL Workbench, create the database and user once (the four lines are in <code>README.md</code>).</li>
+  <li>In PowerShell, once per machine: <code>.\setup.ps1</code> (downloads the server and JDK into <code>server\</code>).</li>
+  <li>Every time: <code>.\run.ps1</code>. On the morning of the presentation use <code>.\run.ps1 -Reseed</code> so every drive has a fresh deadline.</li>
+  <li>Open <code>http://localhost:8080/placement/</code>. Stop with <code>.\stop.ps1</code>.</li>
+  <li>Shortcut: double click <code>start.bat</code> in the folder. It builds, starts the server, deploys and opens the browser.</li>
+</ol>
+<div class="warn"><p>The seeded dates are counted from the day the data is created. If the database was created days ago, drives
+can show "the last date to apply has passed". Run <code>.\run.ps1 -Reseed</code> to fix that.</p></div>
+
+</main>
+</body>
+</html>

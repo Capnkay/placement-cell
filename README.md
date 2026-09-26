@@ -15,7 +15,7 @@ hand-written JDBC layer over MySQL.
 | **Database** | MySQL 8, reached through a JNDI connection pool |
 | **Persistence** | JPA, Hibernate named explicitly as the provider |
 | **Views** | JSP, JSTL and EL only, scriptlets disabled |
-| **Tests** | JUnit 5, 99 tests, run standalone with no Maven |
+| **Tests** | JUnit 5, 146 tests, run standalone with no Maven |
 
 ---
 
@@ -55,7 +55,7 @@ a browser because it lives under `WEB-INF`.
 
 **Servlets.** Every request lands on `AuthFilter` first: session check, role
 check, CSRF token on POSTs. Past the filter, a servlet is a thin controller,
-one per screen or action (`LoginServlet`, `DriveApplyServlet`,
+one per screen or action (`LoginServlet`, `ApplicationServlet`,
 `ReportsServlet`, `DatabaseExplorerServlet`, and so on). A servlet reads the
 request, calls an EJB or the JDBC layer for the work, puts the result on the
 request, and does a `RequestDispatcher.forward` to a JSP under `WEB-INF`, so
@@ -162,9 +162,18 @@ Open **http://localhost:8080/placement/**
 | Placement officer | `tpo@campus.edu` | `Campus@2026` |
 | Student | `aarti.deshpande@campus.edu` | `Campus@2026` |
 
-The database fills itself on first start: 2 officers, 6 students, 4
-companies, 5 drives and a spread of applications. Restarting never wipes it,
-and the seeder does nothing if accounts already exist.
+The database fills itself on first start: 3 officers, 25 students across six
+branches, 10 companies, 14 drives (10 open, 4 closed) and 85 applications in
+every status. Restarting never wipes it, and the seeder does nothing if
+accounts already exist.
+
+Every date in the seed data is counted from the day it was created, so a
+database that is a few days old has drives whose deadline has passed. Before a
+demo, refresh it:
+
+```powershell
+.\run.ps1 -Reseed     # empties the tables, then the seeder fills them again
+```
 
 ---
 
@@ -173,19 +182,20 @@ and the seeder does nothing if accounts already exist.
 | Show | Where | What it proves |
 |---|---|---|
 | Wrong email refused | Sign in with `admin@campus` | Validation runs before any query |
-| Wrong password | Any real email, wrong password | Same message as an unknown account, and a countdown after three tries |
+| Wrong password | Any real email, wrong password | A generic "Email or password is incorrect", then a fifteen minute lockout after five wrong attempts |
 | Eligibility | Sign in as a student, **Drives** | Every rule checked, reasons shown where it fails |
 | Apply | Open a drive, **Apply** | Writes the row and queues a JMS message |
 | Officer console | Sign in as `tpo@campus.edu` | Different navigation, different role |
 | Batch shortlist | **Shortlist**, pick a drive, tick names | A stateful session bean holding your selection across requests |
 | Reports | **Reports** | Live JDBC connection metadata, aggregate SQL, the SQL itself printed |
-| SQL injection | **Reports**, filter with `' OR 1=1 --` | Treated as a literal branch name |
+| SQL injection | Run `.\test.ps1`, test `parametersAreNotSql` | A hostile branch name is bound as a value, so it matches nothing and changes no statement |
 | Transaction | **Reports**, close a drive | Two statements committed together, or neither |
 | The schema itself | **Database → Structure** | Columns, keys and indexes read from `DatabaseMetaData`, and the foreign keys the JPA mapping produced |
 | The rows | **Database → Rows** | Any table, paged, with password digests masked |
 | Live SQL | **Database → Query console** | Type a `SELECT` and see the `ResultSet` render |
 | The console refusing to be abused | Console, try `DROP TABLE student_profile` | Refused, with the reason, three layers deep |
 | Non blocking upload | **Import** | Reads the request with a `ReadListener` |
+| Textbook JDBC | **Tools → Classroom JDBC** | The practical-session style (`DriverManager`, `Statement`) beside the pooled `PreparedStatement` version, both writing to MySQL |
 | Audit trail | **Audit** | Every row written by the interceptor, passwords redacted |
 | Role guard | As a student, open `/placement/admin/students` | 403 page, not a redirect |
 

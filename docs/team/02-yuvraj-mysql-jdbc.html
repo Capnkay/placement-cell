@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yuvraj: MySQL and JDBC</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Yuvraj</span>
+<h1>MySQL and JDBC: how the app connects to the database</h1>
+<p class="sub">You own database connectivity and reporting, and you run the connectivity demo. The teacher will test you hard here, so this brief is a script: what to open, what to click, what to say, and the queries that prove it.</p>
+
+<h2>1. Your role in one sentence</h2>
+<p>You explain and demonstrate how the application reaches MySQL: one JNDI datasource and connection pool, used by Hibernate and by hand-written JDBC, with the reports, the database browser and the classroom style JDBC page built on top.</p>
+
+<h2>2. What you own</h2>
+<p class="note">Paths are under <code>src/main/java/com/campus/placement/</code> unless shown. Line counts are from <code>wc -l</code>.</p>
+<table>
+  <tr><th>File</th><th>Lines</th><th>What it is</th></tr>
+  <tr><td><code>jdbc/PlacementReportDao.java</code></td><td>438</td><td>The JDBC layer: JNDI lookup, PreparedStatement, ResultSet, the manual transaction, DatabaseMetaData connection info</td></tr>
+  <tr><td><code>jdbc/DatabaseExplorerDao.java</code></td><td>366</td><td>Schema and row browsing through DatabaseMetaData, and the guarded read only SQL console</td></tr>
+  <tr><td><code>jdbc/BranchReport</code>, <code>CompanyReport</code>, <code>CandidateRow</code></td><td>84, 79, 95</td><td>Plain result carriers for the report rows (not JPA entities)</td></tr>
+  <tr><td><code>jdbc/ConnectionInfo</code>, <code>ResultTable</code>, <code>TableDetail</code></td><td>45, 98, 208</td><td>Carriers for connection facts, console results and table structure</td></tr>
+  <tr><td><code>web/ReportsServlet.java</code></td><td>116</td><td>Controller for <code>/admin/reports</code>: GET runs the reports, POST closes a drive in a transaction</td></tr>
+  <tr><td><code>web/DatabaseExplorerServlet.java</code></td><td>96</td><td>Controller for <code>/admin/database</code>: Structure, Rows and Query console tabs</td></tr>
+  <tr><td><code>web/ClassroomJdbcServlet.java</code></td><td>84</td><td>Controller for <code>/admin/classroom-jdbc</code>: validates input, then calls one of two bean methods</td></tr>
+  <tr><td><code>ejb/MockScoreBean.java</code></td><td>113</td><td>Stateful bean: <code>addScore</code> (classroom style) and <code>addScoreSafely</code> (pooled, PreparedStatement)</td></tr>
+  <tr><td><code>src/main/webapp/WEB-INF/glassfish-resources.xml</code></td><td>57</td><td>Defines the connection pool and the JNDI datasource. The only place the URL and password live</td></tr>
+  <tr><td><code>views/admin-reports.jsp</code>, <code>admin-database.jsp</code>, <code>admin-classroom.jsp</code></td><td>304, 374, 138</td><td>The three pages you demo (under <code>src/main/webapp/WEB-INF/</code>)</td></tr>
+  <tr><td><code>src/test/.../jdbc/DatabaseConnectivityTest.java</code>, <code>QueryConsoleGuardTest.java</code></td><td>182, 113</td><td>Tests against the real database, and tests of the console guard</td></tr>
+</table>
+<p class="note">Also point at, but do not own: <code>src/main/resources/META-INF/persistence.xml</code> (Hibernate reads the same datasource).</p>
+
+<h2>3. The 60 second explanation</h2>
+<div class="say">
+  <p>Our Java code never contains a database URL or a password. The URL and password sit in one server file, <b>glassfish-resources.xml</b>. GlassFish reads it and builds a <b>connection pool</b>: four MySQL connections opened up front, growing to at most 24. It publishes that pool under the JNDI name <b>java:app/jdbc/placementDS</b>.</p>
+  <p>The code just asks the naming service for that name and gets a <b>DataSource</b>. It calls <b>getConnection()</b> and is handed a pooled connection. It runs a <b>PreparedStatement</b> with question mark placeholders, reads the <b>ResultSet</b>, and <b>closes</b> everything, which returns the connection to the pool.</p>
+  <p>The same datasource is used twice. Hibernate gets it through <b>persistence.xml</b> for normal saving and loading. My JDBC code gets it directly for reports, the database browser and a manual transaction. One pool, one set of credentials, two ways of using it.</p>
+  <p>The one place a URL and password do appear in Java is <b>MockScoreBean.addScore</b>, on purpose: it is our copy of the classroom practical, kept so we can compare it with the proper way.</p>
+  <p>I will show you the chain in the code, then the same rows in the browser, then in MySQL itself.</p>
+</div>
+
+<h2>4. Code walk in VS Code</h2>
+<p>Open these tabs in this order before you start. Line numbers are current as of this brief, so check them once after any edit.</p>
+<pre><code>JNDI name &rarr; connection pool &rarr; DataSource &rarr; Connection &rarr; PreparedStatement &rarr; ResultSet &rarr; close (back to the pool)
+java:app/jdbc/placementDS &rarr; java:app/placementPool &rarr; ds.getConnection() &rarr; prepareStatement(sql) &rarr; executeQuery() &rarr; rs.next() &rarr; try with resources</code></pre>
+<ol class="steps">
+  <li><b><code>WEB-INF/glassfish-resources.xml</code>, lines 38 to 55.</b> Point at the <code>jdbc-connection-pool</code> (line 38) with <code>steady-pool-size="4"</code> and <code>max-pool-size="24"</code> (lines 41 to 42), then the URL, user and password properties (lines 50 to 52), then the <code>jdbc-resource</code> on line 55 that publishes it as <code>java:app/jdbc/placementDS</code>.<br>
+  <i>Say:</i> "This is the only file with the URL and password. It defines the pool and gives it a JNDI name. Change the password here and nothing in Java changes."</li>
+
+  <li><b><code>META-INF/persistence.xml</code>, lines 20 and 26.</b> Point at the Hibernate provider (line 20) and <code>&lt;jta-data-source&gt;java:app/jdbc/placementDS&lt;/jta-data-source&gt;</code> (line 26).<br>
+  <i>Say:</i> "Hibernate gets a name, not a URL. It is the same name as the pool above."</li>
+
+  <li><b><code>PlacementReportDao.java</code>, lines 66 to 93.</b> Point at <code>JNDI_NAME</code> (66), the <code>@Resource(lookup = JNDI_NAME)</code> field (73 to 74), and <code>lookupDataSource()</code> (91 to 93) with <code>new InitialContext().lookup(JNDI_NAME)</code>.<br>
+  <i>Say:</i> "The annotation and the explicit lookup do the same thing. I kept the manual one so I can point at the actual JNDI call. The same name feeds Hibernate on the persistence.xml side."</li>
+
+  <li><b><code>PlacementReportDao.branchReport()</code>, lines 161 to 180.</b> Point at the try with resources header (163 to 165): <code>dataSource().getConnection()</code>, <code>connection.prepareStatement(BRANCH_SQL)</code>, <code>statement.executeQuery()</code>. Then the <code>while (rs.next())</code> loop (167) reading columns by name. Scroll up to <code>BRANCH_SQL</code> (138 to 154) and note the LEFT JOIN.<br>
+  <i>Say:</i> "Five steps in order: datasource, connection, prepared statement, result set, close. Try with resources closes all three in reverse order even if the query throws. Closing the connection hands it back to the pool."</li>
+
+  <li><b><code>PlacementReportDao.searchCandidates()</code>, lines 252 to 299.</b> Point at <code>sql.append(" AND s.branch = ? ")</code> (272) and <code>parameters.add(branch)</code> (273), then the binding loop <code>statement.setObject(i + 1, parameters.get(i))</code> (297 to 299).<br>
+  <i>Say:</i> "The SQL text never contains anything a user typed. Only question marks are added. The values are bound afterwards, so they can never be read as SQL."</li>
+
+  <li><b><code>PlacementReportDao.closeDriveAndRejectPending()</code>, lines 362 to 419.</b> Walk down: <code>setAutoCommit(false)</code> (378), first <code>executeUpdate()</code> (382), second (389), <code>commit()</code> (392), <code>rollback()</code> in the catch (398), and the <code>finally</code> (405 to 418) that restores auto commit and closes. Also show <code>@TransactionAttribute(NOT_SUPPORTED)</code> on line 56.<br>
+  <i>Say:</i> "Closing a drive and rejecting its pending applications must happen together or not at all. Auto commit off, two updates, one commit. If the second update fails, rollback undoes the first. The finally block puts auto commit back before the connection returns to the pool, otherwise the next user would inherit a connection with auto commit off."</li>
+
+  <li><b><code>PlacementReportDao.describeConnection()</code>, lines 100 to 121, then <code>DatabaseExplorerDao.describe()</code>, lines 99 to 170.</b> First method: <code>connection.getMetaData()</code> and <code>meta.getURL()</code>, <code>getDriverName()</code>, <code>getUserName()</code>. Second: <code>getPrimaryKeys</code> (111), <code>getColumns</code> (117), <code>getImportedKeys</code> (133), <code>getIndexInfo</code> (147).<br>
+  <i>Say:</i> "DatabaseMetaData lets the connection describe itself and the schema. Nothing on the Reports or Database pages is typed in. It is all asked of the live connection."</li>
+
+  <li><b><code>DatabaseExplorerDao.runReadOnly()</code> (216 to 256) and <code>whyRefused()</code> (261 to 281).</b> Point at the checks in order: no semicolon inside, must start with select, with, show, describe or explain (the pattern on line 62), must not contain a forbidden word (line 67), max 2000 characters. Then in the run: <code>connection.setReadOnly(true)</code> (235), <code>setQueryTimeout(TIMEOUT_SECONDS)</code> (238), <code>setMaxRows(MAX_ROWS)</code> (239).<br>
+  <i>Say:</i> "Layer one is the keyword guard. Layer two is a read only connection. The rows are capped at 200 and a query is cancelled after 5 seconds. Password hash columns are replaced with (hidden) before they leave this class."</li>
+
+  <li><b><code>MockScoreBean.java</code>, <code>addScore</code> (63 to 78) beside <code>addScoreSafely</code> (81 to 91).</b> First, name the source: <b>Prac7-MarksEntry</b> is the practical project, and its <code>ejb/MarksEntryBean.java</code> is what <code>addScore</code> is copied from. Classroom: <code>Class.forName</code> (65), <code>DriverManager.getConnection(URL, USER, PASSWORD)</code> (66), <code>createStatement()</code> (67), the concatenated <code>query</code> (71 to 72), <code>return st.executeUpdate(query)</code> (73), <code>System.out.println(e)</code> then <code>return 0</code> (75 to 76). Constants with the URL and password are on lines 42 to 45. Safe version: <code>pooled()</code> (124 to 132), <code>?</code> placeholders (84), <code>ps.setString / setInt</code> (85 to 88). Also point at <code>@Remove finished()</code> (119 to 122), which the servlet calls after each use.<br>
+  <i>Say:</i> "Same insert, two styles. The classroom one opens a new connection each call, has the password in the source, builds SQL by joining strings and never closes anything. Unlike the practical, it returns how many rows it saved, so the page can tell the truth. The safe one borrows from the pool and binds values."</li>
+
+  <li><b><code>DatabaseConnectivityTest.java</code>, lines 36 to 58 and 95 to 118.</b> Point at <code>DriverManager.getConnection(URL, USER, PASSWORD)</code> (57): a test runs outside the server, so there is no JNDI and no pool. Then <code>parametersAreNotSql</code> (97 to 118), which binds <code>' OR 1=1 -- </code> and asserts zero rows.<br>
+  <i>Say:</i> "Same SQL, same JDBC calls, only the way the connection is obtained differs. The tests skip themselves if MySQL is down."</li>
+</ol>
+
+<h2>5. Live demo plan</h2>
+<div class="card">
+  <h3>Set up before you present</h3>
+  <p>MySQL service <code>MySQL80</code> running, app running at <code>http://localhost:8080/placement/</code>, signed in as <code>tpo@campus.edu</code> / <code>Campus@2026</code>. Two windows side by side: the browser and a terminal. Open the mysql client once and leave it open:</p>
+<pre><code>&amp; "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u placement_user -p placement_cell
+(password: Placement@2026)</code></pre>
+  <p class="note">Or use Workbench with the same user. Every mysql query below is a read unless marked.</p>
+</div>
+
+<ol class="steps">
+  <li><b>Reports: the live connection.</b> Go to <code>http://localhost:8080/placement/admin/reports</code> (nav link: Reports). The first card, "The live connection", shows Connected and: JNDI name <code>java:app/jdbc/placementDS</code>, Database MySQL 8.0.45, JDBC driver MySQL Connector/J 8.4.0, the JDBC URL, Connected as <code>placement_user@localhost</code>, Auto commit true, isolation REPEATABLE READ, connection class <code>com.sun.gjc.spi.jdbc40.ConnectionWrapper40</code>.<br>
+  <i>Say:</i> "This is not typed into the page. It is read from DatabaseMetaData on a connection borrowed from the pool. The class is a GlassFish wrapper, not MySQL's own, which is proof it came from the pool."<br>
+  Prove it in mysql:
+<pre><code>SELECT CURRENT_USER(), DATABASE(), @@version;</code></pre></li>
+
+  <li><b>Reports: the row counts.</b> Same page, the tiles under the connection card (app_user, student_profile, company, drive, job_application, audit_log). They come from <code>countRows()</code>, a plain Statement over a fixed list of table names.
+<pre><code>SELECT COUNT(*) FROM job_application;
+SELECT COUNT(*) FROM student_profile;
+SHOW TABLES;</code></pre>
+  The numbers must match the tiles. <code>SHOW TABLES</code> lists the same six tables (plus <code>mock_score</code> once the classroom page has been used).</li>
+
+  <li><b>Reports: aggregate SQL.</b> Scroll to "Placement by branch". Open "The SQL behind this table". Students per branch today: Computer Science 10, Information Technology 6, Electronics 4, Statistics 2, Mechanical 2, Civil 2.
+<pre><code>SELECT branch, COUNT(*) AS students FROM student_profile GROUP BY branch;</code></pre>
+  <i>Say:</i> "The report is one SQL statement with joins and aggregates. That is why it is JDBC and not the ORM."</li>
+
+  <li><b>Reports: the prepared search.</b> "Candidate search": Branch Computer Science, Min CGPA 8.5, click the search button. You get Priya Nair 9.3, Manav Shah 8.9, Aarti Deshpande 8.7. The page shows the filter text with <code>?</code> placeholders.
+<pre><code>SELECT s.roll_no, u.full_name, s.cgpa
+  FROM student_profile s JOIN app_user u ON u.id = s.user_id
+ WHERE s.branch = 'Computer Science' AND s.cgpa &gt;= 8.5
+ ORDER BY s.cgpa DESC;</code></pre>
+  Same three rows.</li>
+
+  <li><b>SQL injection, proved in mysql.</b> Concatenated versus bound, side by side. Type these one by one:
+<pre><code>SELECT COUNT(*) AS concatenated FROM student_profile WHERE branch = '' OR '1'='1';
+
+PREPARE s FROM 'SELECT COUNT(*) AS bound FROM student_profile WHERE branch = ?';
+SET @b = "' OR '1'='1";
+EXECUTE s USING @b;
+DEALLOCATE PREPARE s;</code></pre>
+  Today: <code>concatenated</code> returns 26 (every student), <code>bound</code> returns 0. The first is what string joining would send. The second is what <code>setString</code> does: the payload is only ever data.<br>
+  <span class="note">Do not type the payload into the Reports branch box and say it reached SQL as a literal. See the warning in section 7.</span></li>
+
+  <li><b>Reports: the transaction.</b> "Close a drive in one transaction". This changes data. Use <b>Ironbridge Infrastructure : Graduate Engineer Trainee</b> (drive id 9), which has no applications at the applied stage, so nothing is lost. Click "Close and reject pending" and confirm. The green message says the drive is closed and 0 pending applications were rejected.
+<pre><code>SELECT id, status FROM drive WHERE id = 9;
+SELECT status, COUNT(*) FROM job_application WHERE drive_id = 9 GROUP BY status;</code></pre>
+  Run the first query before and after: OPEN, then CLOSED. Afterwards reopen the drive from the Drives page (the Open action) so the demo data is as it was.<br>
+  <i>Say:</i> "Two UPDATEs, one commit. If the second failed, the first would roll back."</li>
+
+  <li><b>Database page: Structure.</b> Nav: Tools, then Database (<code>/admin/database</code>). In the Tables list on the left click <code>job_application</code>, tab Structure. Show the columns, the primary key, the two foreign keys under Relationships, and the unique index <code>uk_student_drive</code>.
+<pre><code>DESCRIBE job_application;
+SHOW CREATE TABLE job_application\G</code></pre>
+  <i>Say:</i> "All of this came from DatabaseMetaData: getColumns, getImportedKeys, getIndexInfo. Hibernate created these keys from the JPA mapping. The two views agree."</li>
+
+  <li><b>Database page: Rows.</b> Click the Rows tab, table <code>app_user</code>. The <code>password_hash</code> column shows (hidden). Then in mysql:
+<pre><code>SELECT id, email, LEFT(password_hash, 18) AS hash_start FROM app_user LIMIT 2;</code></pre>
+  <i>Say:</i> "The salted PBKDF2 digest is in the table, but the page never returns it. The masking happens in <code>read()</code> in the explorer class."</li>
+
+  <li><b>Database page: Query console.</b> Click the Query console tab and run the default query (students by CGPA). Then run the status count below and compare with mysql: 33 REJECTED, 23 APPLIED, 12 SHORTLISTED, 11 INTERVIEW, 6 SELECTED, 85 in all. Then run <code>DROP TABLE student_profile</code>: it is refused with "Only SELECT, WITH, SHOW, DESCRIBE and EXPLAIN are allowed here." Try <code>SELECT 1; SELECT 2</code>: refused as "Only one statement at a time."
+<pre><code>SELECT status, COUNT(*) FROM job_application GROUP BY status;</code></pre>
+  <i>Say:</i> "The console only reads: keyword guard, read only connection, 200 row cap, 5 second timeout."</li>
+
+  <li><b>Proof of the pool.</b> In mysql:
+<pre><code>SHOW PROCESSLIST;</code></pre>
+  You will see a few <code>placement_user</code> rows in state Sleep, one per pooled connection (the pool starts at 4), plus your own session. Click through Reports and Database again and run it again: the count does not grow with every page.<br>
+  <i>Say:</i> "These are the pool's connections. Requests borrow and return them. They are not opened per request."</li>
+
+  <li><b>Classroom JDBC page.</b> Nav: Tools, then Classroom JDBC (<code>/admin/classroom-jdbc</code>). The page shows both code samples and a form. First check the table state in mysql:
+<pre><code>SHOW TABLES LIKE 'mock_score';</code></pre>
+  Before the first classroom save it returns nothing: <code>addScore</code> runs <code>create table if not exists</code> itself. Save <code>Aarti Deshpande</code> 70, 75, 80 with the method <b>Classroom (DriverManager and Statement)</b>. The flash message says it saved and the row appears in "Latest mock scores". Save again with <b>Pooled (DataSource and PreparedStatement)</b>. Then in mysql:
+<pre><code>SELECT * FROM mock_score ORDER BY id DESC;
+DESCRIBE mock_score;
+SHOW CREATE TABLE mock_score\G</code></pre>
+  Two rows, one from each method.
+  <p class="note">The next step is the honest injection style demo on the same page.</p></li>
+
+  <li><b>Classroom JDBC: what goes wrong with string joining.</b> On the same page save the name <code>O'Brien</code> (scores 70, 75, 80) with the method <b>Classroom (DriverManager and Statement)</b>. A red message appears: "The classroom method could not save O'Brien. Its SQL was built by joining strings, and the name changed the statement. The pooled method saves it." No new row shows in "Latest mock scores". The exception is printed to the GlassFish server log (<code>System.out.println(e)</code>, line 75): a MySQL syntax error near <code>Brien</code>. Now save <code>O'Brien</code> again with <b>Pooled (DataSource and PreparedStatement)</b>: "Saved O'Brien" and the row appears.
+<pre><code>SELECT id, sname, aptitude, technical, interview FROM mock_score ORDER BY id DESC;</code></pre>
+  Exactly one <code>O'Brien</code> row, the pooled one.<br>
+  <i>Say:</i> "The apostrophe in the name ended the SQL string early, so the statement changed. That is the everyday face of SQL injection. The bound version treats the same text as plain data."<br>
+  <span class="note">The servlet checks the name first (letters, spaces and . ' - only), so a full injection payload cannot be typed here. The apostrophe is allowed, and that is enough to show the flaw. Rehearse once. The table <code>mock_score</code> exists after any rehearsal; if you want the "table appears" moment on Monday, run <code>DROP TABLE mock_score;</code> in mysql first (this table only).</span></li>
+
+  <li><b>Optional closer: the tests.</b> In PowerShell from the project folder run <code>.\test.ps1</code>. <code>DatabaseConnectivityTest</code> connects to real MySQL with <code>DriverManager</code> and checks metadata, the six tables, the injection payload and a rollback. It skips itself if MySQL is down.</li>
+</ol>
+
+<h2>6. NetBeans practical vs this project</h2>
+<p>The practical is the NetBeans project <b>Prac7-MarksEntry</b> (<code>src/java/ejb/MarksEntryBean.java</code> and <code>web/index.jsp</code>). It uses a Stateful bean, the Derby <code>ClientDriver</code>, <code>DriverManager</code> and a <code>Statement</code>. <code>MockScoreBean</code> is written in the same shape, pointed at MySQL instead of Derby, and sits beside the real data layer so both can be read side by side. The page <code>/admin/classroom-jdbc</code> runs <b>both</b> our methods against the same table, <code>mock_score</code>, and reads the rows back.</p>
+<table>
+  <tr><th>Step</th><th>Practical: <code>MarksEntryBean.addMarks</code></th><th>Ours, classroom: <code>MockScoreBean.addScore</code></th><th>Ours, proper: <code>addScoreSafely</code></th></tr>
+  <tr><td>Load driver</td><td><code>Class.forName("org.apache.derby.jdbc.ClientDriver")</code> (line 11)</td><td><code>Class.forName("com.mysql.cj.jdbc.Driver")</code> (65)</td><td>Not needed: the container owns the driver</td></tr>
+  <tr><td>Get connection</td><td><code>DriverManager.getConnection("jdbc:derby://localhost:1527/mydb", "root", "root")</code> (12), a new connection every call</td><td><code>DriverManager.getConnection(URL, USER, PASSWORD)</code> (66), a new TCP connection every call</td><td><code>pooled()</code> (124 to 132): JNDI lookup, <code>ds.getConnection()</code>, from the pool</td></tr>
+  <tr><td>URL and password</td><td>Written inside the method</td><td>Constants, lines 42 to 45</td><td>Nowhere in Java. In <code>glassfish-resources.xml</code></td></tr>
+  <tr><td>Statement</td><td><code>con.createStatement()</code> (13)</td><td><code>con.createStatement()</code> (67)</td><td><code>PreparedStatement</code> (83 to 84)</td></tr>
+  <tr><td>Build the SQL</td><td><code>"insert into marks(sname,marks1,marks2,marks3) values('" + sname + "'  ," + m1 ...</code> (14 to 15)</td><td>Same joining, into <code>mock_score</code> (71 to 72)</td><td><code>values(?,?,?,?)</code> then <code>setString</code>, <code>setInt</code> (85 to 88)</td></tr>
+  <tr><td>Run it</td><td><code>st.executeUpdate(query)</code> (16), result thrown away, method is <code>void</code></td><td><code>return st.executeUpdate(query)</code> (73): returns rows inserted</td><td><code>ps.executeUpdate()</code> (89)</td></tr>
+  <tr><td>Close</td><td>Never: no <code>close()</code> on the statement or the connection</td><td>Never: same leak</td><td>Try with resources closes the statement and returns the connection</td></tr>
+  <tr><td>Errors</td><td><code>catch (Exception e) { System.out.println(e); }</code> (17 to 19). <code>index.jsp</code> then prints "Marks entered successfully" whatever happened</td><td>Still prints (75), but returns 0 (76). The servlet shows an error message instead of "Saved"</td><td><code>throws SQLException</code>: the servlet shows "The score could not be saved"</td></tr>
+  <tr><td>Injection</td><td>Vulnerable: the name goes straight into the SQL, and the JSP does no validation</td><td>Vulnerable by design. A quote in the name changes the SQL. The servlet allows only letters and <code>. ' -</code> in the name (lines 58 to 59), and <code>O'Brien</code> shows the flaw</td><td>Safe: values are data</td></tr>
+  <tr><td>Who calls it</td><td><code>index.jsp</code>, through a static bean field set in <code>jspInit</code> with a global JNDI lookup</td><td><code>ClassroomJdbcServlet</code>, looking the bean up on each request (line 91) and calling <code>finished()</code> (<code>@Remove</code>) after</td><td>Same servlet</td></tr>
+</table>
+<div class="card">
+  <h3>How to talk through it</h3>
+  <p>"The practical is the right way to learn the five JDBC steps. It is the wrong way to ship them. Ours does the same insert both ways so you can see what changes: where the connection comes from, how the SQL is built, who closes what, and whether the caller ever learns it failed." Point out that <code>ClassroomJdbcServlet</code> validates the name and the 0 to 100 range before either method runs (lines 58 to 61), and looks the bean up by JNDI on every request (line 90) because a Stateful bean is one instance per client and a servlet is shared.</p>
+</div>
+
+<h2>7. Questions you will be asked</h2>
+<div class="warn">
+  <p>Do not claim the Reports branch box proves injection safety. It is a dropdown, and <code>ReportsServlet</code> (line 56) uses <code>Branches.isKnown</code>: an unknown value is dropped and the search runs with no branch filter. The protection that matters is the <code>?</code> placeholder in the DAO. Prove that with the mysql <code>PREPARE</code> demo (step 5) and the test <code>parametersAreNotSql</code>. For an in-app example use the O'Brien step on the Classroom JDBC page.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What happens if the password in the pool is wrong?</p>
+  <p class="a">MySQL refuses the login with "Access denied for user placement_user". The password lives in one place, <code>glassfish-resources.xml</code> (line 52). The pool is set with <code>ping="true"</code>, so GlassFish tests it and reports the failure. In the app, <code>describeConnection()</code> catches the <code>SQLException</code> (lines 115 to 119) and the Reports card shows "Unavailable" with MySQL's message instead of crashing. Pages that go through Hibernate will also fail. Fix the password in the XML and redeploy with <code>.\run.ps1</code>. No Java file changes.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What is a connection pool?</p>
+  <p class="a">A set of already open, already authenticated MySQL connections kept by the server. Code borrows one with <code>getConnection()</code> and gives it back with <code>close()</code>. Ours (lines 41 to 47): 4 connections opened to start, at most 24, idle ones dropped after 300 seconds, and each is validated before it is handed out.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why not open a connection per request?</p>
+  <p class="a">Opening a TCP connection and logging in to MySQL costs far more than the query itself, and MySQL allows only a limited number of connections. A pool pays that cost once and reuses. That is exactly what <code>MockScoreBean.addScore</code> does wrong: it opens a new connection on every call and never closes it.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Is this safe from SQL injection? Show me.</p>
+  <p class="a">Yes for values. Show <code>searchCandidates</code> lines 271 to 299: the SQL only ever gets <code>?</code> added, and values are bound with <code>setObject</code>. Then run the mysql <code>PREPARE</code> demo: concatenated returns 26 rows, bound returns 0. Two honest limits. A table name cannot be a <code>?</code>, so <code>requireKnownTable</code> (explorer, line 347) accepts only names the database itself reported, and <code>countRows</code> (report DAO, 426 to 437) uses a fixed list. And the classroom method is unsafe on purpose, which is why the servlet validates first.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What goes wrong with the classroom version?</p>
+  <p class="a">Four things, all visible in <code>addScore</code>. It opens a new connection on every call and never closes it, so connections leak. The URL and password are in the source. The SQL is built by joining strings, so a name like <code>O'Brien</code> ends the string early and the statement is rejected, which is SQL injection in its everyday form. And errors are only printed: the practical hides the failure completely, ours returns 0 so the page shows an error, but the exception itself still only goes to the server log. The pooled method saves the same name because the value is bound, not joined.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What is the difference between Statement and PreparedStatement?</p>
+  <p class="a">A Statement sends the finished SQL text. A PreparedStatement sends the SQL with <code>?</code> placeholders, and the values travel separately, typed, so they can never be read as SQL. It also lets the database reuse the parsed statement. We still use a plain Statement in a few places where no user value is joined in: row counts over a fixed or database-reported table list, and the console, which runs officer typed reads behind the guard.</p>
+</div>
+
+<div class="qa">
+  <p class="q">What if you forget to close the connection?</p>
+  <p class="a">With a pool, <code>close()</code> does not close the socket, it returns the connection. Forget it and the connection is never returned. After 24 leaks the pool is empty and every request waits. That is why every connection here is in a try with resources block, and why <code>closeDriveAndRejectPending</code> closes in a <code>finally</code>.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why JDBC for reports if you already have Hibernate?</p>
+  <p class="a">Hibernate is right for loading an object, changing a field and saving it. Reports aggregate across tables and return numbers, never written back. Plain SQL with <code>COUNT</code>, <code>GROUP BY</code> and a LEFT JOIN is clearer than forcing it into JPQL. Both use the same datasource, so it is one pool, one set of credentials.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Explain the transaction in closeDriveAndRejectPending.</p>
+  <p class="a">Two updates must succeed together: set the drive to CLOSED, and set its APPLIED applications to REJECTED. <code>setAutoCommit(false)</code>, run both, <code>commit()</code>. On any <code>SQLException</code>, <code>rollback()</code> undoes both. The finally block restores auto commit, then closes. The bean is <code>NOT_SUPPORTED</code> so the container does not start its own JTA transaction, which would conflict with one driven by hand.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Can someone destroy data through the SQL console?</p>
+  <p class="a">Three layers. One: the guard (must start with select, with, show, describe or explain, one statement, no forbidden keyword such as drop, update or into). Two: <code>setReadOnly(true)</code> on the connection, so the server refuses writes even if the guard were fooled. Three: the database user only has rights on <code>placement_cell</code>. Be honest about layer three: that user does have all privileges on this schema, so layers one and two are what stop writes here. Rows are capped at 200 and a query is cancelled after 5 seconds.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Why is the MySQL driver not inside the WAR? Do you still need Class.forName?</p>
+  <p class="a">The pool is created by GlassFish before the application loads, so the driver must be on the server's classpath: <code>run.ps1</code> copies it into <code>domain1\lib</code>. And <code>Class.forName</code> is not needed with a modern JDBC 4 driver, which registers itself. It appears in <code>MockScoreBean.addScore</code> only because the practical uses it.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Where is DatabaseMetaData used?</p>
+  <p class="a">Two places. <code>describeConnection()</code> (report DAO, 100 to 121) fills the "live connection" card: product name and version, driver, URL, user, isolation. <code>describe()</code> (explorer DAO, 99 to 170) reads columns, primary keys, foreign keys and indexes for the Structure tab. <code>tableNames()</code> uses <code>getTables</code> as the whitelist.</p>
+</div>
+
+<div class="qa">
+  <p class="q">The password is in plain text in an XML file. Is that acceptable?</p>
+  <p class="a">It is a local database made for this project and the user only has rights on one schema. It is listed as an accepted risk in <code>docs/SECURITY.md</code> (item A1). The production step would be a GlassFish password alias or a secret from the environment. The point of the design is that it is in one server file, not compiled into classes.</p>
+</div>
+
+<h2>8. If something goes wrong</h2>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>Reports card says "Unavailable", or pages show a database error</td><td>MySQL is probably stopped. In an admin PowerShell: <code>Start-Service MySQL80</code>. Reload the page. No restart of the app needed.</td></tr>
+  <tr><td><code>http://localhost:8080/placement/</code> does not open</td><td>The server is down. From the project folder run <code>.\run.ps1</code> and wait for it to deploy. Do not use <code>-Reseed</code>.</td></tr>
+  <tr><td>Port 8080 already in use</td><td>An old server is running. Run <code>.\stop.ps1</code>, then <code>.\run.ps1</code>.</td></tr>
+  <tr><td>Redirected to the login page</td><td>Session expired. Sign in again as <code>tpo@campus.edu</code>. A student account gets a 403 on <code>/admin/</code> pages.</td></tr>
+  <tr><td>Access denied for user placement_user</td><td>Wrong password in <code>glassfish-resources.xml</code>, or the user was not created. Correct password is <code>Placement@2026</code>. Recreate the user with the CREATE USER and GRANT lines in <code>README.md</code>, then <code>.\run.ps1</code>.</td></tr>
+  <tr><td><code>mysql</code> is not recognised</td><td>Use the full path: <code>&amp; "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u placement_user -p placement_cell</code>, or use Workbench.</td></tr>
+  <tr><td>Classroom page shows no scores</td><td>Normal. The table <code>mock_score</code> is created by the first classroom method save. <code>SHOW TABLES</code> will confirm.</td></tr>
+  <tr><td>A POST is rejected (form does nothing or an error page)</td><td>The CSRF token went stale. Reload the page and submit again.</td></tr>
+  <tr><td>Console says a query is refused</td><td>Read the reason. It only allows one SELECT, WITH, SHOW, DESCRIBE or EXPLAIN. Words like set, do, use and into are blocked wherever they appear.</td></tr>
+  <tr><td>Row counts differ from what you rehearsed</td><td>Someone applied, closed a drive or saved a score. Re-run your mysql query live; the browser and mysql should always agree with each other.</td></tr>
+</table>
+
+<p class="note">Written by and for the team. Keep this open in a second window while you present.</p>
+
+</main>
+</body>
+</html>

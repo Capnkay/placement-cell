@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karan: The App Itself</title>
+<link rel="stylesheet" href="team.css">
+</head>
+<body>
+<main>
+
+<span class="who">Karan</span>
+<h1>The app itself: users, data, flows and the demo</h1>
+<p class="sub">You open the presentation and explain what the app is, who uses it, how data moves, and you run the walkthrough.</p>
+
+<h2>1. Your role in one sentence</h2>
+<p>You explain the application as a whole, and you own the code that turns each screen into an action: the student and
+officer flows, the dashboards, and the demo data.</p>
+
+<h2>2. What you own</h2>
+<table>
+  <tr><th>File</th><th>Lines</th><th>What it is</th></tr>
+  <tr><td><code>ejb/DataSeeder.java</code></td><td>336</td><td>Singleton bean that fills an empty database: 3 officers, 25 students, 10 companies, 14 drives, 85 applications</td></tr>
+  <tr><td><code>web/StudentDashboardServlet.java</code></td><td>88</td><td>The student's landing page</td></tr>
+  <tr><td><code>web/DriveBrowseServlet.java</code></td><td>90</td><td>The drives board and a single drive, with the eligibility verdict for each</td></tr>
+  <tr><td><code>web/ApplicationServlet.java</code></td><td>127</td><td>Apply, withdraw, and the "my applications" list</td></tr>
+  <tr><td><code>web/AdminDashboardServlet.java</code></td><td>66</td><td>The officer's landing page and its totals</td></tr>
+  <tr><td><code>web/AdminDriveServlet.java</code></td><td>220</td><td>Announce, edit, open, close and delete drives, with validation</td></tr>
+  <tr><td><code>web/AdminCompanyServlet.java</code></td><td>126</td><td>The recruiter register</td></tr>
+  <tr><td><code>web/AdminStudentServlet.java</code></td><td>108</td><td>Student register, a student's record, suspend and unlock</td></tr>
+  <tr><td><code>web/AdminApplicationServlet.java</code></td><td>107</td><td>The pipeline: filter, and move a candidate's status with a note</td></tr>
+  <tr><td><code>web/ShortlistServlet.java</code></td><td>159</td><td>Batch shortlist using the stateful bean</td></tr>
+  <tr><td><code>web/AuditServlet.java</code>, <code>web/SystemServlet.java</code></td><td>100</td><td>The audit trail and the system page</td></tr>
+  <tr><td><code>run.ps1</code>, <code>README.md</code>, <code>docs/team/</code></td><td></td><td>How the app is started, reseeded and explained</td></tr>
+</table>
+
+<h2>3. The two minute explanation</h2>
+<div class="say">
+  <p><b>What it is.</b> Every placement season a college has to match students to company drives. This app is that
+  matching desk. It has two kinds of user: students and the placement officer.</p>
+  <p><b>Student side.</b> A student registers with a real email and their academic record: branch, CGPA, backlogs. From then on the
+  app compares that record with the rules on every drive. Drives they qualify for show an Apply button. Drives they do not
+  qualify for show the exact reason, for example "minimum CGPA is 7.5, yours is 6.4". They apply, and then follow the status
+  and the officer's notes.</p>
+  <p><b>Officer side.</b> The officer maintains the companies, announces drives with their rules, moves candidates from
+  applied to shortlisted to interview to selected, and can shortlist many at once. There are reports that come straight from
+  the database with plain JDBC, a page that shows the database itself, and an audit trail of everything that changed.</p>
+  <p><b>Behind it.</b> Servlets receive requests, EJB beans hold the business rules, JPA and Hibernate save the objects to MySQL,
+  and JSP pages draw the screens. The reports use JDBC directly on the same connection pool. Each of us will now explain
+  our own layer.</p>
+</div>
+
+<h2>4. The story, step by step</h2>
+<h3>A student's journey</h3>
+<ol class="steps">
+  <li><b>Register</b> at <code>/register</code>. Name, college email, password, roll number, branch, year, CGPA, backlogs, phone. The row goes to <code>app_user</code> and <code>student_profile</code>. (Tiya explains how.)</li>
+  <li><b>Sign in</b> at <code>/login</code>. The servlet checks the password hash and stores a small <code>SessionUser</code> in the HttpSession.</li>
+  <li><b>Dashboard</b> at <code>/app/dashboard</code>: profile summary, counts of your applications by status, how many open drives you can still apply to, and a note if the resume or phone number is missing.</li>
+  <li><b>Drives board</b> at <code>/app/drives</code>. <code>DriveBrowseServlet</code> asks <code>DriveService.check</code> for each open drive and shows the verdict.</li>
+  <li><b>Apply</b>: open a drive, press Apply. <code>ApplicationServlet.doPost</code> checks the rules again, then <code>ApplicationService.apply</code> writes the row and queues a notification message.</li>
+  <li><b>Follow it</b> at <code>/app/applications</code>: status and the cell's latest note. A student may withdraw.</li>
+</ol>
+<h3>The officer's journey</h3>
+<ol class="steps">
+  <li><b>Sign in</b> with an officer account. There is no public way to become an officer.</li>
+  <li><b>Overview</b> at <code>/admin/dashboard</code>: how many students, how many placed, open drives, applications.</li>
+  <li><b>Companies and drives</b>: add a recruiter, announce a drive with role, package, location, minimum CGPA, backlog limit, branches and dates. Every field is validated on the server.</li>
+  <li><b>Pipeline</b> at <code>/admin/applications</code>: filter by drive and status, move a candidate on, write a note the student will see.</li>
+  <li><b>Shortlist</b> at <code>/admin/shortlist</code>: tick many candidates, then commit them together. A stateful bean holds the selection between clicks.</li>
+  <li><b>Reports, Database, Audit</b>: Yuvraj and Chandra explain these.</li>
+</ol>
+
+<h2>5. The demo data, and why it looks complete</h2>
+<p><code>DataSeeder</code> is a singleton bean marked <code>@Startup</code>. On deploy it counts the accounts. If there are none, it fills the
+database. If there are some, it does nothing, so restarting never wipes real work.</p>
+<table>
+  <tr><th>Table</th><th>Rows</th><th>What is in it</th></tr>
+  <tr><td><code>app_user</code></td><td>28</td><td>3 officers and 25 students. Every password is stored as its own salted PBKDF2 hash.</td></tr>
+  <tr><td><code>student_profile</code></td><td>25</td><td>Branches: 8 Computer Science, 6 Information Technology, 4 Electronics, 2 Statistics, 2 Mechanical, 2 Civil (one Civil student is suspended). CGPA runs from 5.6 to 9.3. Three have no phone number, so the profile warning appears.</td></tr>
+  <tr><td><code>company</code></td><td>10</td><td>Northwind Systems, Blue Harbour Analytics, Vertex Financial, Lumen Health, Kestrel Logistics, Orbit Semiconductors, Meridian Consulting, Paperkite Learning, Ironbridge Infrastructure, Saffron Retail Tech</td></tr>
+  <tr><td><code>drive</code></td><td>14</td><td>10 open with deadlines from 3 to 24 days away, and 4 already closed, so the archive has history. Rules differ: package 5.0 to 12.5 LPA, minimum CGPA 5.5 to 8.0, backlogs 0 to 3, different branch lists.</td></tr>
+  <tr><td><code>job_application</code></td><td>85</td><td>Every status appears: applied, shortlisted, interview, selected, rejected. 6 students hold an offer.</td></tr>
+</table>
+<div class="card">
+  <h3>How the applications were made, in case you are asked</h3>
+  <p>Six are written by hand to give the demo accounts a story. The rest come from simple arithmetic over the student and drive
+  lists, and only for pairs where the student really meets the drive's rules, using the same three tests as the live app.
+  Nothing is random, so the data is the same every time and the demo can be rehearsed. Every date is counted from today.</p>
+</div>
+<div class="warn"><p>Because dates are counted from the day the data was created, a database seeded last week has drives whose deadline has
+passed, and students cannot apply. Before the presentation run <code>.\run.ps1 -Reseed</code>. It empties the tables and lets
+the seeder fill them again with fresh dates.</p></div>
+
+<h2>6. Code walk in VS Code</h2>
+<ol class="steps">
+  <li><b>Open <code>DriveBrowseServlet.java</code>.</b> Point at the loop that calls <code>driveService.check(profile, drive)</code> for every drive and puts the map of verdicts on the request. Then <code>Web.render(request, response, "drives.jsp", "drives")</code>. Say: the servlet decides nothing, it asks the bean and hands the answer to a page.</li>
+  <li><b>Open <code>ApplicationServlet.java</code>, <code>doPost</code>.</b> Show the order: find the drive, <code>check</code> the verdict, refuse if already applied or not eligible, then <code>applicationService.apply</code>, then a flash message and a redirect. Say: the button was hidden already, but the rules run again here because a form can be replayed or written by hand.</li>
+  <li><b>Same file, <code>Web.redirect</code> after the write.</b> Say: after a POST we redirect instead of forwarding, so pressing refresh cannot apply twice (Post, Redirect, Get).</li>
+  <li><b>Open <code>AdminDriveServlet.java</code>.</b> Show the block of <code>errors.put(...)</code> lines: role, package range, CGPA range, at least one branch, last date on or before the drive date.</li>
+  <li><b>Open <code>ShortlistServlet.java</code>.</b> Show <code>basket()</code>: a JNDI lookup of <code>java:module/ShortlistBean</code> stored in the HttpSession. Say why it is not injected: a servlet is one shared object, a stateful bean must belong to one officer.</li>
+  <li><b>Open <code>DataSeeder.java</code>.</b> Show <code>@Singleton @Startup</code>, the "count accounts" guard at the top of <code>seed()</code>, and the <code>meets</code> method used to make only valid applications.</li>
+</ol>
+
+<h2>7. Questions you will be asked</h2>
+<div class="qa"><p class="q">Who exactly uses this app?</p>
+<p class="a">Two kinds of people. Students, who register themselves, and placement officers, who are created by the college. Companies do not log in: the officer keeps their details and posts their drives, as a real placement cell does.</p></div>
+
+<div class="qa"><p class="q">How does data get into the system?</p>
+<p class="a">Through forms. A student registration creates the account and profile. A student applying creates an application. An officer creating a company or a drive creates those rows. An officer can also import many students at once. Everything passes server side validation before it reaches the database, and the demo data is loaded once by the seeder.</p></div>
+
+<div class="qa"><p class="q">How does data get out?</p>
+<p class="a">Students see a board of drives with their eligibility and their own applications. Officers see totals, a pipeline, reports read with JDBC, a browser for the database itself, and an audit trail. A student can also download their own resume.</p></div>
+
+<div class="qa"><p class="q">Why can an officer not register on the public page?</p>
+<p class="a">Because the register form only ever creates a student. An officer account is a privilege, so it is created by the college. Only the seeder creates officers here. That keeps a student from choosing their own role.</p></div>
+
+<div class="qa"><p class="q">Why are there no recruiter logins?</p>
+<p class="a">It was a scope decision. The cell is the go-between, so the officer posts drives for the company. A recruiter role would be a natural extension: a third role, its own pages, and an approval step by the officer.</p></div>
+
+<div class="qa"><p class="q">A student says a drive is missing. Why?</p>
+<p class="a">The default board shows open drives. The board also has an "all" view. A drive whose last date has passed shows as not eligible with the reason "the last date to apply was ...", so nothing is hidden without explanation.</p></div>
+
+<div class="qa"><p class="q">Is the eligibility check only on the page?</p>
+<p class="a">No. The page hides the button, and the servlet checks the rules again on the POST, because a page can be stale and a request can be hand written.</p></div>
+
+<div class="qa"><p class="q">Where does the demo data come from, and is it real?</p>
+<p class="a">It is made up. The seeder creates it on the first start if the database is empty. It is deterministic, so it is the same every time, and the dates are counted from today so the drives are always current.</p></div>
+
+<div class="qa"><p class="q">What did you not build?</p>
+<p class="a">Recruiter logins, email or SMS delivery of the notifications (a message is queued through JMS and handled by a bean, not sent by email), password reset by email, and confirmation links for new accounts. Two smaller gaps: nothing stops a student who already holds an offer from applying to more drives (the dashboard says the cell will be in touch about the policy), and the audit trail records the actor as "portal" instead of the individual officer, because sign in is done by the app's own filter rather than a server security realm. These are the honest next steps.</p></div>
+
+<div class="qa"><p class="q">Which technologies are used and why?</p>
+<p class="a">Servlets and JSP for the web layer, EJB for business rules and transactions, JPA with Hibernate for ordinary reads and writes, JDBC for reports where SQL fits better than objects, MySQL as the database, GlassFish as the Jakarta EE server. Each one is a topic from the course.</p></div>
+
+<h2>8. If something goes wrong</h2>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>Page will not load</td><td>Is MySQL running? Is the server up? Run <code>.\run.ps1</code> and wait for "deployed".</td></tr>
+  <tr><td>Drives all say "the last date has passed"</td><td>Stale seed dates. Run <code>.\run.ps1 -Reseed</code>.</td></tr>
+  <tr><td>"That form could not be verified"</td><td>The page sat open too long or the server restarted. Reload the page and try again.</td></tr>
+  <tr><td>Login fails for everyone</td><td>The database may be empty or half filled. <code>.\run.ps1 -Reseed</code>.</td></tr>
+</table>
+
+</main>
+</body>
+</html>
