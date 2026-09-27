@@ -23,6 +23,7 @@ order = [
     ("Chandra: entities and EJB", "05-chandra-entities-ejb"),
     ("Viva questions", "06-viva-questions"),
     ("Demo run sheet", "07-demo-run-sheet"),
+    ("Pastables cheat sheet", "08-cheat-sheet-pastables"),
 ]
 
 out = fitz.open()

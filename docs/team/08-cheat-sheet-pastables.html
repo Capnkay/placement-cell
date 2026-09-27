@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pastables Cheat Sheet</title>
+<link rel="stylesheet" href="team.css">
+<style>
+  .pb { position: relative; }
+  .pb code { display: block; padding: 10px 14px; }
+  table code { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+
+<header class="cover"><div class="cover-inner">
+<div class="brandrow"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V13"/><path d="M19 19V13"/><path d="M5 13C5 6 19 6 19 13"/></svg></span><b>Placement Cell</b><span class="dot">/</span><span>Advanced Java team pack</span></div>
+<span class="who">Everyone, keep this open during the demo</span>
+<h1>Pastables cheat sheet</h1>
+<p class="sub">Every value the demo needs, exactly as written in each brief, in the order the run sheet uses them. Copy from here instead of typing from memory.</p>
+</div></header>
+
+<div class="card">
+<p><b>One account runs through the whole presentation.</b> Karan opens the register page, Tiya creates the account below,
+and Kinjal, Chandra and Yuvraj all continue working with this same student afterward. Nobody invents a different one
+mid demo.</p>
+</div>
+
+<h2>0. The one demo student, start to finish</h2>
+<table>
+<tr><th>Field</th><th>Paste this</th></tr>
+<tr><td>Full name</td><td><code>Demo Student</code></td></tr>
+<tr><td>Email</td><td><code>demo.student.cs@gmail.com</code></td></tr>
+<tr><td>Password</td><td><code>Demo@2026x</code></td></tr>
+<tr><td>Roll number</td><td><code>CS26100</code></td></tr>
+<tr><td>Branch</td><td>Computer Science</td></tr>
+<tr><td>Graduating year</td><td><code>2026</code></td></tr>
+<tr><td>CGPA</td><td><code>8.0</code></td></tr>
+<tr><td>Live backlogs</td><td><code>0</code></td></tr>
+<tr><td>Mobile number</td><td><code>9876543210</code></td></tr>
+</table>
+
+<h2>1. Karan: opening</h2>
+<table>
+<tr><th>What</th><th>Paste this</th></tr>
+<tr><td>App URL</td><td><code>http://localhost:8080/placement/</code></td></tr>
+<tr><td>Officer login</td><td><code>tpo@campus.edu</code> / <code>Campus@2026</code></td></tr>
+<tr><td>Student login (seeded, not the demo student)</td><td><code>aarti.deshpande@campus.edu</code> / <code>Campus@2026</code></td></tr>
+</table>
+
+<h2>2. Tiya: account creation and security</h2>
+<table>
+<tr><th>Step</th><th>Paste this</th></tr>
+<tr><td>Fake domain (rejected)</td><td><code>demo.student@thisdomaindoesnotexist123.com</code></td></tr>
+<tr><td>Disposable domain (optional, rejected)</td><td><code>x@mailinator.com</code></td></tr>
+<tr><td>Real sign up</td><td>the account in section 0 above</td></tr>
+<tr><td>Wrong password to try</td><td><code>Wrong@123</code></td></tr>
+<tr><td>Another unknown email (same refusal message)</td><td><code>nobody.here@gmail.com</code></td></tr>
+<tr><td>Admin page as the student (403)</td><td><code>http://localhost:8080/placement/admin/database</code></td></tr>
+<tr><td>Same page, the bypass that is now fixed (still 403)</td><td><code>http://localhost:8080/placement//admin/database</code></td></tr>
+<tr><td>MySQL: show the new hash</td><td>run query 1 in <code>demo-queries.sql</code></td></tr>
+</table>
+<div class="card">
+<p class="mb-0"><b>PowerShell, if you show the hash without opening the SQL file:</b></p>
+<pre><code>$env:MYSQL_PWD = 'Placement@2026'
+&amp; "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u placement_user placement_cell -e "SELECT id, email, user_role, password_hash FROM app_user ORDER BY id DESC LIMIT 3;"</code></pre>
+</div>
+
+<h2>3. Kinjal: views, validation, uploads</h2>
+<table>
+<tr><th>Step</th><th>Paste this</th></tr>
+<tr><td>Trigger a validation error (CGPA out of range)</td><td>type <code>11</code> into CGPA on the profile form</td></tr>
+<tr><td>Officer login for the import demo</td><td><code>tpo@campus.edu</code> / <code>Campus@2026</code></td></tr>
+<tr><td>Import page</td><td><code>http://localhost:8080/placement/admin/import</code></td></tr>
+<tr><td>Fake import row (a different person, not the demo student)</td>
+    <td><code>Priya Patil,priya.patil.import@campus.edu,CS22099,Computer Science,2027,7.5,0,9820100299</code></td></tr>
+<tr><td>Role guard as student</td><td><code>http://localhost:8080/placement/admin/import</code></td></tr>
+</table>
+
+<h2>4. Chandra: entities, EJB, eligibility</h2>
+<table>
+<tr><th>Step</th><th>Paste this</th></tr>
+<tr><td>Drives board as the demo student</td><td><code>http://localhost:8080/placement/app/drives</code></td></tr>
+<tr><td>Officer moves the application on</td><td><code>http://localhost:8080/placement/admin/applications</code></td></tr>
+<tr><td>Audit trail</td><td><code>http://localhost:8080/placement/admin/audit</code></td></tr>
+<tr><td>MySQL: the new application row, joined</td><td>run query 3 in <code>demo-queries.sql</code></td></tr>
+<tr><td>MySQL: the audit trail</td><td>run query 4 in <code>demo-queries.sql</code></td></tr>
+</table>
+<div class="warn"><p class="mb-0">The withdraw-a-progressed-application demo edits a hidden form field in devtools. Only do this
+on the demo student's own row, never on a seeded student's real application.</p></div>
+
+<h2>5. Yuvraj: MySQL and JDBC</h2>
+<table>
+<tr><th>Step</th><th>Paste this</th></tr>
+<tr><td>Reports page</td><td><code>http://localhost:8080/placement/admin/reports</code></td></tr>
+<tr><td>Database page</td><td><code>http://localhost:8080/placement/admin/database</code></td></tr>
+<tr><td>Classroom JDBC page</td><td><code>http://localhost:8080/placement/admin/classroom-jdbc</code></td></tr>
+<tr><td>Name that breaks the classroom (unsafe) method</td><td><code>O'Brien</code></td></tr>
+<tr><td>Scores to enter with it</td><td><code>70</code>, <code>75</code>, <code>80</code></td></tr>
+<tr><td>MySQL: table shapes and the unique key</td><td>run queries 5 and 6 in <code>demo-queries.sql</code></td></tr>
+<tr><td>MySQL: the mock_score table Classroom JDBC writes to</td><td>run query 7 in <code>demo-queries.sql</code></td></tr>
+</table>
+
+<h2>6. Karan: closing</h2>
+<table>
+<tr><th>Step</th><th>Paste this</th></tr>
+<tr><td>Officer overview, now showing the new application</td><td><code>http://localhost:8080/placement/admin/dashboard</code></td></tr>
+<tr><td>MySQL: the totals the overview shows</td><td>run query 8 in <code>demo-queries.sql</code></td></tr>
+</table>
+
+<h2>If something needs resetting</h2>
+<table>
+<tr><th>What</th><th>Do this</th></tr>
+<tr><td>The database password when MySQL asks</td><td><code>Placement@2026</code></td></tr>
+<tr><td>Clear a lockout on the demo student</td><td>sign in as <code>tpo@campus.edu</code>, open Students, open the account, "Clear the lockout"</td></tr>
+<tr><td>Remove the demo student after rehearsing</td><td>sign in as <code>tpo@campus.edu</code>, open Students, open the account, "Remove from the register". Never a direct database delete.</td></tr>
+</table>
+
+<p class="note">Full detail behind every one of these lines is in each person's own brief and in <code>07-demo-run-sheet</code>. This page only exists so nobody has to type a value from memory while presenting.</p>
+
+</main>
+</body>
+</html>

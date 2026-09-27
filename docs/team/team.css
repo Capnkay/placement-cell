@@ -250,7 +250,7 @@ svg text { font-family: "Inter", "Segoe UI", sans-serif; }
   h3 { break-after: avoid; }
   .card, .say, .warn, .steps li, .qa, pre, tr, .stat > div { break-inside: avoid; }
   a { color: inherit; text-decoration: none; }
-  pre { box-shadow: none; font-size: 8.6pt; padding: 10px 12px; }
+  pre { box-shadow: none; font-size: 8.6pt; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; overflow-x: visible; }
   th, td { padding: 6px 11px; font-size: 9.6pt; }
   p, li { margin-bottom: 7px; }
   h3 { margin-top: 15px; }

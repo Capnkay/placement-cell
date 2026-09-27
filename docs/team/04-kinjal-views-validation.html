@@ -80,7 +80,7 @@
 <li><b>Bulk import as officer.</b> Sign out, sign in as <code>tpo@campus.edu</code>, <code>Campus@2026</code>. Open <b>Tools</b>, then <b>Import</b> (<code>/placement/admin/import</code>). Click <b>Import these rows</b> with the pre filled text. Today's result: 1 created (<code>IT22011</code>, Karan Bhatt), 2 refused: row 1 "An account already exists for priya.nair@campus.edu" (she is already seeded) and row 3 "broken-address is not a valid email address". Click <b>Open the student register</b> to show Karan Bhatt. This creates a real account: remove it afterwards from <b>Students</b>, open Karan Bhatt, <b>Remove from the register</b> (that button uses the data-confirm dialog from app.js).</li>
 <li><b>Role guard on a page.</b> Optional, as the student: <code>http://localhost:8080/placement/admin/import</code> shows the 403 page rendered from <code>error-403.jsp</code>.</li>
 </ol>
-<div class="warn">Rehearse the import with the first two rows changed to a new fake name, email and roll number (for example <code>Demo Student,demo.student@campus.edu,CS22099,Computer Science,2027,7.5,0,9820100299</code>) so the real demo still has something to create. A second run of the same rows creates nothing.</div>
+<div class="warn">This is a different, separate fake student from the "Demo Student" the rest of the presentation uses, so it does not collide with that account. Rehearse the import with the first two rows changed to a new fake name, email and roll number (for example <code>Priya Patil,priya.patil.import@campus.edu,CS22099,Computer Science,2027,7.5,0,9820100299</code>) so the real demo still hassomething to create. A second run of the same rows creates nothing.</div>
 
 <h2>6. Servlet and JSP course topics mapped to this code</h2>
 <table>

@@ -99,21 +99,25 @@
 
 <h2>5. Live demo plan: create an account and sign in</h2>
 <p>About five minutes. Use a private browser window so no old cookies interfere. The app must be running at
-<code>http://localhost:8080/placement/</code>. Rehearse with an email at a real domain that is yours, for example
-<code>yourname@gmail.com</code>. Nothing is ever sent to it. Use a roll number nobody has used, such as <code>DEMO001</code>.</p>
+<code>http://localhost:8080/placement/</code>. This is the same demo account the whole presentation uses: Karan hands
+you the register page already open, and Kinjal, Chandra and Yuvraj continue with this same account after you. Use the
+exact values below, not made up ones, so it matches the rest of the run sheet: name <code>Demo Student</code>,
+email <code>demo.student.cs@gmail.com</code>, password <code>Demo@2026x</code>, roll <code>CS26100</code>,
+branch Computer Science, batch year <code>2026</code>, CGPA <code>8.0</code>, backlogs <code>0</code>,
+phone <code>9876543210</code>.</p>
 
 <ol class="steps">
   <li><b>Open <code>http://localhost:8080/placement/register</code>.</b> Type anything in a password box and point at the dots.
       Right click, Inspect, show <code>type="password"</code> and <code>method="post"</code>.
       <br><i>Say:</i> "The password is masked, and it goes in the request body, not the address bar."</li>
   <li><b>Fake email first.</b> Fill the form: name <code>Demo Student</code>, email <code>demo.student@thisdomaindoesnotexist123.com</code>,
-      password <code>Demo@12345</code> in both boxes, roll <code>DEMO001</code>, any branch, batch year <code>2027</code>, CGPA <code>7.5</code>,
-      backlogs <code>0</code>, phone <code>9000000001</code>. Click the create button.
+      password <code>Demo@2026x</code> in both boxes, roll <code>CS26100</code>, branch Computer Science, batch year <code>2026</code>, CGPA <code>8.0</code>,
+      backlogs <code>0</code>, phone <code>9876543210</code>. Click the create button.
       <br><b>Expect:</b> the form comes back with "That domain doesn't appear to accept email. Check for a typo and try again." beside the email.
       The two password boxes are empty and the other fields are kept. In the devtools Network tab the response is <code>400</code>.
       <br><i>Say:</i> "The address is well formed, so the shape check passes. The domain has no DNS record, so the second check refuses it."
       <br><b>Optional:</b> use <code>x@mailinator.com</code> to show "Please use a permanent email address, not a disposable or temporary inbox."</li>
-  <li><b>Valid sign up.</b> Change only the email to your real one, for example <code>yourname@gmail.com</code>, and type the passwords again. Submit.
+  <li><b>Valid sign up.</b> Change only the email to <code>demo.student.cs@gmail.com</code> and type the passwords again. Submit.
       <br><b>Expect:</b> a redirect to the sign in page showing a green panel with a tick, "Welcome, Demo. Your account is ready.", the email and roll number, and three steps with step 1 highlighted. The email is already filled in, the cursor is in the password field, and the button reads "Sign in to your new account". Reload the page and the panel is gone: it is shown once (RegisterServlet puts three values in the session, LoginServlet reads and removes them).
       <br><i>Say:</i> "That was a POST followed by a redirect, so pressing refresh cannot create the account twice."</li>
   <li><b>Show the stored password.</b> Open PowerShell and run:
@@ -121,15 +125,15 @@
 &amp; "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u placement_user placement_cell -e "SELECT id, email, user_role, password_hash FROM app_user ORDER BY id DESC LIMIT 3;"</code></pre>
       <b>Expect:</b> your new row on top with <code>STUDENT</code> and a value like
       <code>pbkdf2$120000$CX25cv2wd8tNj4Vcb1VCjg==$qBJs55Jt1cqYpZ//gtvCJZPH8ZE+IMaqZmlbD955kYA=</code>.
-      Point at the four parts: algorithm, 120000 rounds, salt, hash. Password <code>Demo@12345</code> appears nowhere.
+      Point at the four parts: algorithm, 120000 rounds, salt, hash. Password <code>Demo@2026x</code> appears nowhere.
       <br><b>Then show the salt matters:</b> add <code>WHERE email IN ('aarti.deshpande@campus.edu','rahul.menon@campus.edu')</code>.
       Both seeded accounts share the password <code>Campus@2026</code>, yet the salt and hash differ.
       <br><i>Say:</i> "Even we cannot read the password back. A person with the same password gets a different hash because the salt is random per account."</li>
-  <li><b>Wrong password.</b> On the sign in page enter your new email and <code>Wrong@123</code>.
+  <li><b>Wrong password.</b> On the sign in page enter <code>demo.student.cs@gmail.com</code> and <code>Wrong@123</code>.
       <br><b>Expect:</b> "Email or password is incorrect." with HTTP <code>401</code>, the email box kept, the password box empty.
       Repeat with <code>nobody.here@gmail.com</code>: the identical sentence.
       <br><i>Say:</i> "We never say which half was wrong. A stranger cannot use this form to find out who has an account."</li>
-  <li><b>Correct login.</b> Enter your email and <code>Demo@12345</code>, tick "Remember my email on this device", sign in.
+  <li><b>Correct login.</b> Enter <code>demo.student.cs@gmail.com</code> and <code>Demo@2026x</code>, tick "Remember my email on this device", sign in.
       <br><b>Expect:</b> a redirect to <code>/placement/app/dashboard</code> with "Welcome to the placement cell" on the first sign in from a browser, and "Welcome back" after that. In devtools, Application, Cookies: <code>JSESSIONID</code>,
       <code>remember_email</code> and <code>last_visit</code>, all HttpOnly, path <code>/placement</code>. In Network, open any page and show the
       <code>Content-Security-Policy</code> response header.
