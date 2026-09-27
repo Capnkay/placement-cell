@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointers: Live Companion</title>
+<style>
+:root {
+  --ink: #1f1b18; --ink-2: #4a423c; --muted: #6f655d;
+  --paper: #ffffff; --panel: #f8f3ef; --panel-2: #f1e9e3; --line: #e8dfd7;
+  --accent: #b23a0d; --accent-2: #8f2d08; --accent-soft: #fbece4;
+  --ok: #1b6b45; --ok-soft: #e4f4ec;
+  --code-bg: #1e1b18; --code-ink: #f3e9e1; --code-line: #3a332e;
+  --radius: 12px; --shadow: 0 1px 2px rgba(60,35,20,.06), 0 6px 18px rgba(60,35,20,.08);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 15.5px/1.6 "Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif; }
+a { color: var(--accent); }
+main { max-width: 1080px; margin: 0 auto; padding: 0 20px 100px; }
+
+header.top {
+  position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(180deg, var(--accent-soft), #fff 90%);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 20px;
+}
+.top-inner { max-width: 1080px; margin: 0 auto; }
+.brandrow { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+.mark { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: #fff; }
+.mark svg { width: 15px; height: 15px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.brandrow b { color: var(--ink); font-weight: 650; }
+h1.pagetitle { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: -0.02em; }
+.sub { color: var(--muted); margin: 0 0 12px; font-size: 0.95rem; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 6px; }
+nav.jump a {
+  text-decoration: none; font-size: 0.82rem; font-weight: 650;
+  padding: 6px 13px; border-radius: 99px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink);
+}
+nav.jump a:hover, nav.jump a.schema { border-color: var(--accent); color: var(--accent-2); }
+nav.jump a.schema { background: var(--accent-soft); }
+
+section.person { padding: 40px 0 10px; border-top: 1px solid var(--line); scroll-margin-top: 150px; }
+section.person:first-of-type { border-top: none; }
+.person-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
+.avatar { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-weight: 760; font-size: 1.1rem; flex: none; }
+.avatar.schema { background: var(--ink); }
+h2.person-title { font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; }
+.person-role { color: var(--muted); font-size: 0.95rem; margin: 4px 0 22px; max-width: 70ch; }
+
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 22px; }
+.shot { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; box-shadow: var(--shadow); }
+.shot img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--line); }
+.shot .cap { padding: 9px 13px; font-size: 0.84rem; color: var(--ink-2); }
+.shot .cap b { color: var(--ink); }
+.shot a.full { display: block; }
+
+.point { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 16px; margin: 0 0 20px; font-size: 0.94rem; }
+.point b { color: var(--accent-2); }
+.point ul { margin: 6px 0 0; padding-left: 20px; }
+.point li { margin-bottom: 4px; }
+
+.code {
+  background: var(--code-bg); color: var(--code-ink);
+  border-radius: var(--radius); margin: 0 0 20px; overflow: hidden; box-shadow: var(--shadow);
+}
+.code .file {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 15px; font: 600 0.8rem "Cascadia Code","JetBrains Mono",ui-monospace,Consolas,monospace;
+  background: #14110f; color: #e0a684; border-bottom: 1px solid var(--code-line);
+}
+.code .file span.dim { color: #a89890; font-weight: 500; }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-size: 0.83rem; line-height: 1.55;
+  font-family: "Cascadia Code","JetBrains Mono",ui-monospace,Consolas,monospace; }
+.code .comment { color: #8f8378; }
+.code .kw { color: #e39a71; }
+.code .str { color: #b7c98a; }
+.code .type { color: #d8b877; }
+
+.qref { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; margin: 0 0 18px; box-shadow: var(--shadow); }
+.qref table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.qref td { padding: 5px 8px 5px 0; vertical-align: top; }
+.qref td.k { color: var(--muted); white-space: nowrap; width: 1%; }
+.qref code { background: var(--panel-2); color: var(--accent-2); padding: 1px 6px; border-radius: 5px; font-size: 0.86em; }
+
+footer.done { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 30px 0 10px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brandrow"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V13"/><path d="M19 19V13"/><path d="M5 13C5 6 19 6 19 13"/></svg></span><b>Placement Cell</b></div>
+    <h1 class="pagetitle">Pointers: live companion</h1>
+    <p class="sub">Real screenshots of the running app and the real code, in presentation order. Open this alongside the app while you explain each person's part. Screenshots taken 28 Sep 2026 against the reseeded data.</p>
+    <nav class="jump">
+      <a class="schema" href="#schema">Database schema</a>
+      <a href="#karan">Karan</a>
+      <a href="#tiya">Tiya</a>
+      <a href="#kinjal">Kinjal</a>
+      <a href="#chandra">Chandra</a>
+      <a href="#yuvraj">Yuvraj</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="person" id="schema">
+  <div class="person-head"><span class="avatar schema">#</span><h2 class="person-title">Database schema</h2></div>
+  <p class="person-role">The schema below is not typed anywhere. It is read live from MySQL through <code>DatabaseMetaData</code>
+  by <code>DatabaseExplorerDao</code>, and it always matches whatever the real table looks like. Open <b>Tools &rarr; Database</b>
+  in the officer console to show this live instead of a screenshot.</p>
+
+  <div class="shots">
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-database-structure.png" target="_blank"><img src="pointers-screens/admin-database-structure.png" alt="app_user table structure"></a>
+      <div class="cap"><b>app_user</b>: columns, types, the primary key, and the unique index on email. Note <code>password_hash</code> is marked <b>never shown</b>, columns and the badge are read from live MySQL metadata, not written by hand.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-database-joborders-fk.png" target="_blank"><img src="pointers-screens/admin-database-joborders-fk.png" alt="job_application table structure with foreign keys"></a>
+      <div class="cap"><b>job_application</b>: the join table. Relationships shows both foreign keys (<code>drive_id &rarr; drive.id</code>, <code>student_id &rarr; student_profile.id</code>), Indexes shows <code>uk_student_drive</code>, the unique key that stops a double application.</div>
+    </div>
+  </div>
+
+  <div class="point"><b>Point at this live:</b>
+    <ul>
+      <li>Six tables total: <code>app_user</code>, <code>student_profile</code>, <code>company</code>, <code>drive</code>, <code>job_application</code>, <code>audit_log</code>. A seventh, <code>mock_score</code>, appears once Yuvraj's Classroom JDBC page has been used.</li>
+      <li>Click through <code>student_profile</code> and <code>drive</code> too. Every foreign key on screen matches a <code>@ManyToOne</code> in the entity classes below, because Hibernate created them from those annotations.</li>
+    </ul>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>entity/JobApplication.java</span><span class="dim">lines 24 to 55</span></div>
+    <pre><span class="kw">@Entity</span>
+<span class="kw">@Table</span>(name = <span class="str">"job_application"</span>,
+        uniqueConstraints = <span class="kw">@UniqueConstraint</span>(name = <span class="str">"uk_student_drive"</span>,
+                columnNames = {<span class="str">"student_id"</span>, <span class="str">"drive_id"</span>}))
+<span class="comment">// this is what makes the unique key you just saw on screen</span>
+<span class="kw">public class</span> <span class="type">JobApplication</span> implements Serializable {
+
+    <span class="kw">@Id</span>
+    <span class="kw">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+    <span class="kw">private</span> Long id;
+
+    <span class="kw">@ManyToOne</span>(fetch = FetchType.EAGER, optional = <span class="kw">false</span>)
+    <span class="kw">@JoinColumn</span>(name = <span class="str">"student_id"</span>, nullable = <span class="kw">false</span>)
+    <span class="kw">private</span> StudentProfile student;   <span class="comment">// owns the student_id foreign key</span>
+
+    <span class="kw">@ManyToOne</span>(fetch = FetchType.EAGER, optional = <span class="kw">false</span>)
+    <span class="kw">@JoinColumn</span>(name = <span class="str">"drive_id"</span>, nullable = <span class="kw">false</span>)
+    <span class="kw">private</span> Drive drive;             <span class="comment">// owns the drive_id foreign key</span></pre>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>WEB-INF/glassfish-resources.xml</span><span class="dim">the only file with the URL and password</span></div>
+    <pre><span class="kw">&lt;jdbc-connection-pool</span> name=<span class="str">"java:app/placementPool"</span>
+                      datasource-classname=<span class="str">"com.mysql.cj.jdbc.MysqlDataSource"</span>
+                      steady-pool-size=<span class="str">"4"</span> max-pool-size=<span class="str">"24"</span>
+                      is-connection-validation-required=<span class="str">"true"</span> ping=<span class="str">"true"</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;property</span> name=<span class="str">"URL"</span> value=<span class="str">"jdbc:mysql://localhost:3306/placement_cell?..."</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;property</span> name=<span class="str">"user"</span> value=<span class="str">"placement_user"</span><span class="kw">/&gt;</span>
+    <span class="kw">&lt;property</span> name=<span class="str">"password"</span> value=<span class="str">"Placement@2026"</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/jdbc-connection-pool&gt;</span>
+
+<span class="kw">&lt;jdbc-resource</span> pool-name=<span class="str">"java:app/placementPool"</span> jndi-name=<span class="str">"java:app/jdbc/placementDS"</span><span class="kw">/&gt;</span>
+<span class="comment">&lt;!-- Java code never sees a URL or password. It asks JNDI for "java:app/jdbc/placementDS". --&gt;</span></pre>
+  </div>
+
+  <div class="qref">
+    <table>
+      <tr><td class="k">Schema browser</td><td><code>http://localhost:8080/placement/admin/database</code> (officer, Tools &rarr; Database)</td></tr>
+      <tr><td class="k">Same in MySQL</td><td><code>DESCRIBE job_application;</code> &nbsp; <code>SHOW CREATE TABLE job_application\G</code></td></tr>
+      <tr><td class="k">Connection facts</td><td><code>http://localhost:8080/placement/admin/reports</code>, the "live connection" card</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="person" id="karan">
+  <div class="person-head"><span class="avatar">K</span><h2 class="person-title">Karan: the app itself</h2></div>
+  <p class="person-role">Two kinds of user, and the flow from a request to a page. Show the login page and the student
+  journey through eligibility to an application.</p>
+
+  <div class="shots">
+    <div class="shot">
+      <a class="full" href="pointers-screens/login.png" target="_blank"><img src="pointers-screens/login.png" alt="Login page"></a>
+      <div class="cap">The sign in page. Two portals from here: student self sign up, officer accounts exist only from the seeder.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/drives-board.png" target="_blank"><img src="pointers-screens/drives-board.png" alt="Drives board with eligibility"></a>
+      <div class="cap">The drives board. "8 eligible of 10 shown": every open drive is checked against this student's record.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/officer-dashboard.png" target="_blank"><img src="pointers-screens/officer-dashboard.png" alt="Officer overview"></a>
+      <div class="cap">The officer's overview: totals, placed percentage, open drives, recent applications, all live.</div>
+    </div>
+  </div>
+
+  <div class="point"><b>Say while pointing at the drives board:</b>
+    <ul>
+      <li>The servlet asks the eligibility bean for a verdict on every drive, then hands the whole thing to a JSP. It decides nothing itself.</li>
+      <li>Apply runs the same check again on the server, because the button being hidden is not what actually stops an ineligible application.</li>
+    </ul>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>web/ApplicationServlet.java</span><span class="dim">doPost, lines 90 to 100</span></div>
+    <pre>Eligibility verdict = driveService.check(profile, drive);
+<span class="kw">if</span> (verdict.isAlreadyApplied()) {
+    Web.flashError(request, <span class="str">"You have already applied to "</span> + drive.getCompany().getName() + <span class="str">"."</span>);
+    Web.redirect(request, response, <span class="str">"/app/applications"</span>);
+    <span class="kw">return</span>;
+}
+<span class="kw">if</span> (!verdict.isEligible()) {
+    Web.flashError(request, <span class="str">"You are not eligible for this drive: "</span> + verdict.getFirstReason());
+    Web.redirect(request, response, <span class="str">"/app/drive?id="</span> + drive.getId());
+    <span class="kw">return</span>;
+}
+<span class="comment">// only past here does applicationService.apply() ever run</span></pre>
+  </div>
+
+  <div class="qref">
+    <table>
+      <tr><td class="k">App</td><td><code>http://localhost:8080/placement/</code></td></tr>
+      <tr><td class="k">Officer</td><td><code>tpo@campus.edu</code> / <code>Campus@2026</code></td></tr>
+      <tr><td class="k">Seeded student</td><td><code>aarti.deshpande@campus.edu</code> / <code>Campus@2026</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="person" id="tiya">
+  <div class="person-head"><span class="avatar">T</span><h2 class="person-title">Tiya: accounts and security</h2></div>
+  <p class="person-role">Fake email rejected, then a real signup ending on the welcome panel. This is the account the
+  whole presentation continues with afterward.</p>
+
+  <div class="shots">
+    <div class="shot">
+      <a class="full" href="pointers-screens/register-fake-email.png" target="_blank"><img src="pointers-screens/register-fake-email.png" alt="Register form rejecting a fake email domain"></a>
+      <div class="cap">Fake domain refused: "That domain doesn't appear to accept email." A DNS lookup, not a guess.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/welcome-panel.png" target="_blank"><img src="pointers-screens/welcome-panel.png" alt="Welcome panel after a successful signup"></a>
+      <div class="cap">After a real signup: the welcome panel, email pre filled, cursor already in the password box.</div>
+    </div>
+  </div>
+
+  <div class="point"><b>Say while pointing at the fixed role check bypass:</b>
+    <ul>
+      <li>The officer check used to test the raw request text. A doubled slash, <code>//admin/database</code>, reached the officer page as a student, because the container routes on a cleaned path that the raw text did not match.</li>
+      <li>Now the same cleaned path is what the rule tests. Five tests pin it down.</li>
+    </ul>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>security/RequestPaths.java</span><span class="dim">the whole file, 36 lines</span></div>
+    <pre><span class="kw">public static</span> String canonical(String requestUri, String contextPath) {
+    String path = requestUri.substring(contextPath.length());
+    <span class="kw">int</span> parameters = path.indexOf(<span class="str">';'</span>);
+    <span class="kw">if</span> (parameters &gt;= 0) { path = path.substring(0, parameters); }
+    <span class="kw">return</span> path.replaceAll(<span class="str">"/{2,}"</span>, <span class="str">"/"</span>);   <span class="comment">// collapses // to /</span>
+}
+
+<span class="kw">public static boolean</span> isAdminPath(String path) {
+    <span class="kw">return</span> path.equals(<span class="str">"/admin"</span>) || path.startsWith(<span class="str">"/admin/"</span>);
+}</pre>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>security/PasswordHasher.java</span><span class="dim">hash, lines 32 to 39</span></div>
+    <pre><span class="kw">public static</span> String hash(String rawPassword) {
+    <span class="type">byte</span>[] salt = <span class="kw">new</span> <span class="type">byte</span>[16];
+    RANDOM.nextBytes(salt);                                    <span class="comment">// fresh salt, every account</span>
+    <span class="type">byte</span>[] digest = pbkdf2(rawPassword.toCharArray(), salt, 120_000);   <span class="comment">// PBKDF2, 120,000 rounds</span>
+    <span class="kw">return</span> <span class="str">"pbkdf2$"</span> + 120_000 + <span class="str">"$"</span> + encode(salt) + <span class="str">"$"</span> + encode(digest);
+}
+<span class="comment">// stored as: pbkdf2$120000$&lt;salt&gt;$&lt;hash&gt;  -- the password itself is never in this string</span></pre>
+  </div>
+
+  <div class="qref">
+    <table>
+      <tr><td class="k">Fake domain</td><td><code>demo.student@thisdomaindoesnotexist123.com</code></td></tr>
+      <tr><td class="k">Real signup</td><td><code>demo.student.cs@gmail.com</code> / <code>Demo@2026x</code> / roll <code>CS26100</code></td></tr>
+      <tr><td class="k">Full list</td><td><code>08-cheat-sheet-pastables.html</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="person" id="kinjal">
+  <div class="person-head"><span class="avatar">K</span><h2 class="person-title">Kinjal: views and validation</h2></div>
+  <p class="person-role">The getting-started checklist a new student lands on, and the same drives board Karan uses,
+  seen from the angle of who wrote the page.</p>
+
+  <div class="shots">
+    <div class="shot">
+      <a class="full" href="pointers-screens/student-dashboard-checklist.png" target="_blank"><img src="pointers-screens/student-dashboard-checklist.png" alt="Student dashboard with getting started checklist"></a>
+      <div class="cap">A new student's overview: the getting started checklist, step 2 highlighted, all built from JSTL over data the servlet put on the request.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/drive-detail-breadcrumb.png" target="_blank"><img src="pointers-screens/drive-detail-breadcrumb.png" alt="Drive detail page with breadcrumb"></a>
+      <div class="cap">A single drive's page, reached only by a servlet forward. Typing the JSP path directly gives a 404.</div>
+    </div>
+  </div>
+
+  <div class="point"><b>Say while pointing at either page:</b>
+    <ul>
+      <li>Every value on this page came from the database and is printed with <code>c:out</code>, which escapes it, so nothing a user typed can become markup or a script.</li>
+      <li>Scriptlets are switched off in <code>web.xml</code>: a page with Java in it would not even compile.</li>
+    </ul>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>util/Validators.java</span><span class="dim">the email pattern, lines 13 to 23</span></div>
+    <pre><span class="comment">/* Deliberately stricter than the RFC: no leading, trailing or doubled dot,
+   a proper domain, a final label of at least two letters. */</span>
+<span class="kw">private static final</span> Pattern EMAIL = Pattern.compile(
+        <span class="str">"^(?=.{1,64}@)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*"</span>
+      + <span class="str">"@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+"</span>
+      + <span class="str">"[A-Za-z]{2,24}$"</span>);
+<span class="comment">// admin@campus fails this. It is the HTML attributes' job to hint, this class's job to decide.</span></pre>
+  </div>
+
+  <div class="qref">
+    <table>
+      <tr><td class="k">Direct JSP (refused)</td><td><code>http://localhost:8080/placement/WEB-INF/views/drives.jsp</code></td></tr>
+      <tr><td class="k">Escaping proof</td><td>register with name <code>"&gt;&lt;b&gt;hi&lt;/b&gt;</code>, view page source</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="person" id="chandra">
+  <div class="person-head"><span class="avatar">C</span><h2 class="person-title">Chandra: entities and EJB</h2></div>
+  <p class="person-role">The pipeline where an officer moves an application, and the audit trail two rows appear on
+  right after: one for the write, one from the message driven bean.</p>
+
+  <div class="shots">
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-pipeline.png" target="_blank"><img src="pointers-screens/admin-pipeline.png" alt="Officer pipeline page"></a>
+      <div class="cap">The pipeline: every application, filter by drive and status, a control to move it on.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-audit.png" target="_blank"><img src="pointers-screens/admin-audit.png" alt="Audit trail showing only writes"></a>
+      <div class="cap">3 rows for a database that has had far more than 3 requests: reads are skipped on purpose, only writes and sign ins are kept.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-shortlist.png" target="_blank"><img src="pointers-screens/admin-shortlist.png" alt="Shortlist basket page"></a>
+      <div class="cap">The shortlist basket: a stateful bean, one per officer, held in that officer's session.</div>
+    </div>
+  </div>
+
+  <div class="point"><b>Say while pointing at the audit trail:</b>
+    <ul>
+      <li>This row is not written by the servlet. An interceptor wraps the business method and writes it, so the beans hold no audit code at all.</li>
+      <li><code>[redacted]</code> next to a password parameter, and any entity prints as <code>Type#id</code>, never a Java object address.</li>
+    </ul>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>ejb/EligibilityRules.java</span><span class="dim">check, the whole method</span></div>
+    <pre><span class="kw">if</span> (drive.getStatus() != DriveStatus.OPEN)
+    result.reject(<span class="str">"This drive has been closed by the placement cell."</span>);
+<span class="kw">if</span> (drive.getLastDate().isBefore(today))
+    result.reject(<span class="str">"The last date to apply was "</span> + drive.getLastDate() + <span class="str">"."</span>);
+<span class="kw">if</span> (student.getCgpa() &lt; drive.getMinCgpa())
+    result.reject(String.format(<span class="str">"Requires a CGPA of %.2f, your record shows %.2f."</span>, ...));
+<span class="kw">if</span> (student.getBacklogs() &gt; drive.getMaxBacklogs())
+    result.reject(<span class="str">"Allows at most "</span> + drive.getMaxBacklogs() + <span class="str">" backlog(s), ..."</span>);
+<span class="comment">// every rule runs, every failing one adds a reason. Nothing stops at the first failure.</span></pre>
+  </div>
+
+  <div class="qref">
+    <table>
+      <tr><td class="k">Move a status</td><td><code>http://localhost:8080/placement/admin/applications</code></td></tr>
+      <tr><td class="k">See the two audit rows</td><td><code>http://localhost:8080/placement/admin/audit</code></td></tr>
+      <tr><td class="k">Proof in the log</td><td><code>server\glassfish7\glassfish\domains\domain1\logs\server.log</code>, search "Notification delivered"</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="person" id="yuvraj">
+  <div class="person-head"><span class="avatar">Y</span><h2 class="person-title">Yuvraj: MySQL and JDBC</h2></div>
+  <p class="person-role">The live connection card, and the Classroom JDBC page where the two coding styles run side
+  by side against the same table.</p>
+
+  <div class="shots">
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-reports-connection.png" target="_blank"><img src="pointers-screens/admin-reports-connection.png" alt="Reports page live connection card"></a>
+      <div class="cap">Not typed in anywhere: JNDI name, driver, URL, isolation level, all read from <code>DatabaseMetaData</code> on a pooled connection.</div>
+    </div>
+    <div class="shot">
+      <a class="full" href="pointers-screens/admin-classroom-jdbc.png" target="_blank"><img src="pointers-screens/admin-classroom-jdbc.png" alt="Classroom JDBC page with both code styles"></a>
+      <div class="cap">The practical's style (<code>DriverManager</code>, <code>Statement</code>) beside the pooled, bound version, both writing to the same table live.</div>
+    </div>
+  </div>
+
+  <div class="point"><b>Say while pointing at the reports page:</b>
+    <ul>
+      <li>Five steps in order: datasource, connection, prepared statement, result set, close. Closing hands the connection back to the pool, it does not end a TCP connection.</li>
+      <li>The connection class is a GlassFish wrapper, not MySQL's own driver class, which is the proof it came from the pool.</li>
+    </ul>
+  </div>
+
+  <div class="code">
+    <div class="file"><span>jdbc/PlacementReportDao.java</span><span class="dim">branchReport, lines 163 to 178</span></div>
+    <pre><span class="kw">try</span> (Connection connection = dataSource().getConnection();
+     PreparedStatement statement = connection.prepareStatement(BRANCH_SQL);
+     ResultSet rs = statement.executeQuery()) {
+
+    <span class="kw">while</span> (rs.next()) {
+        BranchReport row = <span class="kw">new</span> BranchReport();
+        row.setBranch(rs.getString(<span class="str">"branch"</span>));
+        row.setStudents(rs.getInt(<span class="str">"students"</span>));
+        rows.add(row);
+    }
+}  <span class="comment">// try with resources: closes result set, statement, then connection -- back to the pool</span></pre>
+  </div>
+
+  <div class="qref">
+    <table>
+      <tr><td class="k">Reports</td><td><code>http://localhost:8080/placement/admin/reports</code></td></tr>
+      <tr><td class="k">Database</td><td><code>http://localhost:8080/placement/admin/database</code></td></tr>
+      <tr><td class="k">Classroom JDBC</td><td><code>http://localhost:8080/placement/admin/classroom-jdbc</code>, break it with <code>O'Brien</code></td></tr>
+    </table>
+  </div>
+</section>
+
+
+<footer class="done">Screenshots in <code>pointers-screens/</code>. Click any image's caption link to open it full size.
+Full detail is in each person's own brief in this folder.</footer>
+
+</main>
+</body>
+</html>

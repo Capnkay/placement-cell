@@ -16,7 +16,9 @@ $chrome = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $chrome) { throw 'Chrome or Edge is needed to print the PDFs' }
 
-Get-ChildItem $here -Filter '0*.html' | Sort-Object Name | ForEach-Object {
+# 09-pointers-live.html is a screen only reference (live screenshots and code,
+# meant to be scrolled and clicked, not printed), so it is left out of the PDF pass.
+Get-ChildItem $here -Filter '0*.html' | Where-Object { $_.Name -ne '09-pointers-live.html' } | Sort-Object Name | ForEach-Object {
     $pdf = Join-Path $out ($_.BaseName + '.pdf')
     $url = ([System.Uri]$_.FullName).AbsoluteUri
     # Chrome reports its progress on stderr, which a strict shell reads as a failure,
